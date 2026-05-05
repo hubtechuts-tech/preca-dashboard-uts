@@ -1,0 +1,3779 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Preca API",
+    "description": "API para la gestión de servicios de precalificación y screening en México",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Preca Support",
+      "email": "soporte@preca.mx"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Servidor de desarrollo"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Público",
+      "description": "Endpoints públicos para la landing page (sin autenticación requerida)"
+    },
+    {
+      "name": "Servicios",
+      "description": "Gestión del catálogo de servicios"
+    },
+    {
+      "name": "API Keys",
+      "description": "Gestión de claves API para acceso programático"
+    },
+    {
+      "name": "Clientes",
+      "description": "Gestión y consulta de clientes"
+    },
+    {
+      "name": "Solicitudes",
+      "description": "Gestión de solicitudes de screening (consultas de Buró de Crédito)"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Endpoints para webhooks de servicios externos (Stripe, Wee Trust)"
+    },
+    {
+      "name": "Archivos",
+      "description": "Gestión de carga de archivos (documentos, imágenes)"
+    },
+    {
+      "name": "Cupones",
+      "description": "Gestión de cupones de descuento (solo administradores)"
+    }
+  ],
+  "paths": {
+    "/public/services": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "summary": "Listar servicios activos (Público)",
+        "description": "Obtiene una lista de servicios activos con datos mínimos para la landing page. No requiere autenticación. Retorna solo: id, name, description, price, formSchema.",
+        "parameters": [
+          {
+            "name": "personType",
+            "in": "query",
+            "description": "Filtrar por tipo de persona",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "physical",
+                "moral"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de servicios activos obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicService"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/screenings": {
+      "post": {
+        "tags": [
+          "Público"
+        ],
+        "summary": "Crear solicitud de screening (Público)",
+        "description": "Crea una nueva solicitud de screening desde la landing page sin autenticación. Retorna solo el enlace de pago de Stripe. Los usuarios anónimos pueden crear screenings rellenando el formulario público.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePublicScreeningRequest",
+                "example": {
+                  "serviceId": "1",
+                  "applicantName": "Juan Pérez García",
+                  "applicantEmail": "juan.perez@example.com",
+                  "applicantPhone": "+52 55 1234 5678",
+                  "advisorId": "123",
+                  "advisorName": "María López",
+                  "advisorPhone": "+52 55 9876 5432",
+                  "formData": {
+                    "direccion": "Calle Principal 123",
+                    "ciudad": "Ciudad de México",
+                    "codigo_postal": "01000"
+                  },
+                  "applicantPersonType": "physical",
+                  "applicantLegalRepresentative": "José Manuel López",
+                  "applicantRFC": "XAXX010101000",
+                  "applicantStreet": "Calle Principal 123",
+                  "applicantColony": "Centro",
+                  "applicantMunicipality": "Guadalajara",
+                  "applicantState": "Jalisco",
+                  "applicantZipCode": "44100"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud creada exitosamente. Redirige al usuario al enlace de pago.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicScreeningResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de entrada inválidos o servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Error de validación",
+                    "value": {
+                      "error": "Applicant email is required, Invalid email format"
+                    }
+                  },
+                  "serviceInactive": {
+                    "summary": "Servicio no disponible",
+                    "value": {
+                      "error": "Service TEST is not currently available"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Stripe Webhook",
+        "description": "Endpoint para recibir eventos de Stripe (checkout.session.completed, etc.). Verifica la firma de Stripe y procesa pagos.",
+        "responses": {
+          "200": {
+            "description": "Evento procesado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "received": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación (firma inválida, payload malformado)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Listar servicios",
+        "description": "Obtiene una lista de todos los servicios disponibles con filtros opcionales. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "description": "Filtrar solo servicios activos",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "personType",
+            "in": "query",
+            "description": "Filtrar por tipo de persona",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "physical",
+                "moral"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de servicios obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Service"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Crear servicio",
+        "description": "Crea un nuevo servicio en el catálogo y en Stripe. La sincronización con Stripe es obligatoria. Requiere rol de administrador.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Servicio creado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de entrada inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Se requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El código del servicio ya existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error de integración con Stripe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/minimal": {
+      "get": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Listar servicios (datos mínimos)",
+        "description": "Obtiene una lista de servicios con información mínima (id, name, description, price). Requiere autenticación vía API key o sesión. Ideal para integraciones que solo necesitan datos básicos.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "description": "Filtrar solo servicios activos",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "personType",
+            "in": "query",
+            "description": "Filtrar por tipo de persona",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "physical",
+                "moral"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de servicios con datos mínimos obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceMinimal"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "name": "Precalificación Básica",
+                    "description": "Verificación básica de antecedentes",
+                    "price": 299.99
+                  },
+                  {
+                    "id": 2,
+                    "name": "Precalificación Pro",
+                    "description": "Verificación completa de antecedentes",
+                    "price": 599.99
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Obtener servicio por ID",
+        "description": "Obtiene los detalles de un servicio específico. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del servicio (Integer)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Actualizar servicio",
+        "description": "Actualiza un servicio existente. Los cambios se sincronizan automáticamente con Stripe. Requiere rol de administrador.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del servicio (Integer)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servicio actualizado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de entrada inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Se requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error de integración con Stripe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Eliminar servicio",
+        "description": "Elimina un servicio del catálogo y lo desactiva en Stripe. Requiere rol de administrador.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del servicio (Integer)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Servicio eliminado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Service deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Se requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error de integración con Stripe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/schema": {
+      "patch": {
+        "tags": [
+          "Servicios"
+        ],
+        "summary": "Actualizar esquema de formulario del servicio",
+        "description": "Actualiza o crea el esquema de formulario dinámico para un servicio. Este esquema define qué campos se recopilan durante la creación de screenings. Requiere rol de administrador.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del servicio (Integer)",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFormSchemaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Esquema de formulario actualizado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Esquema de formulario inválido - Revisa la estructura de campos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingFields": {
+                    "summary": "Campos faltantes",
+                    "value": {
+                      "error": "Form schema must have at least one field"
+                    }
+                  },
+                  "invalidFieldType": {
+                    "summary": "Tipo de campo inválido",
+                    "value": {
+                      "error": "Field 'ciudad' of type 'select' requires options"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Se requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-keys": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Listar API keys",
+        "description": "Obtiene todas las API keys del usuario autenticado. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "description": "Filtrar solo claves activas",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de API keys obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKey"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Crear API key",
+        "description": "Crea una nueva API key con permisos específicos. La clave completa solo se muestra una vez. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key creada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyWithRawKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de API keys excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-keys/{id}/revoke": {
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Revocar API key",
+        "description": "Revoca (desactiva) una API key. La clave no se elimina pero deja de ser válida. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la API key (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key revocada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "API key revoked successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - No puedes revocar claves de otros usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-keys/{id}": {
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Eliminar API key",
+        "description": "Elimina permanentemente una API key. Esta acción no se puede deshacer. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la API key (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key eliminada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "API key deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - No puedes eliminar claves de otros usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Listar o buscar clientes",
+        "description": "Obtiene todos los clientes con sus estadísticas de screenings. Opcionalmente, busca clientes por nombre, email o teléfono usando el parámetro `q`. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Término de búsqueda para filtrar clientes por nombre, email o teléfono. Mínimo 2 caracteres.",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "example": "Juan"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de clientes obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Client"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients/{id}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Obtener cliente por ID",
+        "description": "Obtiene un cliente específico con sus estadísticas detalladas. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del cliente (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cliente encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Client"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/screenings": {
+      "post": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Crear solicitud de screening",
+        "description": "Crea una nueva solicitud de screening (consulta de Buró de Crédito). Puede ser realizada por un agente autenticado (n8n) o de forma anónima.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScreeningRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud creada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Screening"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de entrada inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Servicio no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Listar solicitudes",
+        "description": "Obtiene una lista de solicitudes con filtros opcionales. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtrar por estado",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending_payment",
+                "paid",
+                "processing_bureau",
+                "completed",
+                "rejected"
+              ]
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "Filtrar por ID de usuario",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "adminUserId",
+            "in": "query",
+            "description": "Filtrar por ID de administrador asignado",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Número máximo de resultados",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Número de resultados a omitir",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de solicitudes obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Screening"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/screenings/{id}": {
+      "get": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Obtener solicitud por ID",
+        "description": "Obtiene una solicitud específica por su ID. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del servicio (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Solicitud encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Screening"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitud no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Solicitudes"
+        ],
+        "summary": "Actualizar estado de solicitud",
+        "description": "Actualiza el estado de una solicitud. Solo administradores. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la solicitud (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScreeningStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud actualizada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Screening"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos de entrada inválidos o transición de estado inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "403": {
+              "description": "No autorizado - Requiere rol de administrador",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Solicitud no encontrada",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/screenings/{id}/report": {
+        "post": {
+          "tags": [
+            "Solicitudes"
+          ],
+          "summary": "Subir reporte de Buró de Crédito",
+          "description": "Sube un archivo de reporte (PDF, DOCX, etc.) para una solicitud. Solo administradores. Requiere autenticación.",
+          "security": [
+            {
+              "BearerAuth": []
+            },
+            {
+              "CookieAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "description": "ID del servicio (UUID)",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "format": "binary",
+                      "description": "Archivo del reporte (PDF, DOCX, PNG, JPG). Máximo 10MB."
+                    }
+                  },
+                  "required": [
+                    "file"
+                  ]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Reporte subido exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "reportUrl": {
+                        "type": "string",
+                        "description": "URL pública del reporte subido"
+                      },
+                      "fileKey": {
+                        "type": "string",
+                        "description": "Clave del archivo en el almacenamiento"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "Report uploaded successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Archivo inválido (tipo no permitido, tamaño excedido, o solicitud no pagada)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "No autenticado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "No autorizado - Requiere rol de administrador",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Solicitud no encontrada",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/screenings/{id}/complete": {
+        "post": {
+          "tags": [
+            "Solicitudes"
+          ],
+          "summary": "Completar solicitud y enviar reporte",
+          "description": "Marca una solicitud como completada y envía el reporte al cliente por email. Solo administradores. Requiere autenticación.",
+          "security": [
+            {
+              "BearerAuth": []
+            },
+            {
+              "CookieAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "description": "ID de la solicitud (UUID)",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reportUrl": {
+                      "type": "string",
+                      "description": "URL del reporte previamente subido",
+                      "example": "https://storage.supabase.co/.../report.pdf"
+                    },
+                    "adminNotes": {
+                      "type": "string",
+                      "description": "Notas opcionales del administrador sobre el procesamiento",
+                      "example": "Verificación completada sin problemas"
+                    }
+                  },
+                  "required": [
+                    "reportUrl"
+                  ]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Solicitud completada y reporte enviado exitosamente",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "screeningId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID de la solicitud completada"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "Screening completed successfully and report sent to client"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud no está en estado 'processing' o reportUrl es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "401": {
+              "description": "No autenticado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "No autorizado - Requiere rol de administrador",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Solicitud no encontrada",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/screenings/by-phone": {
+        "get": {
+          "tags": [
+            "Solicitudes"
+          ],
+          "summary": "Obtener solicitudes por número de teléfono",
+          "description": "Busca y retorna las últimas 3 solicitudes asociadas a un número de teléfono específico. Requiere autenticación.",
+          "security": [
+            {
+              "BearerAuth": []
+            },
+            {
+              "CookieAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "phone",
+              "in": "query",
+              "description": "Número de teléfono del solicitante a buscar",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "+52 55 1234 5678"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Lista de solicitudes obtenida exitosamente (máximo 3)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Screening"
+                    }
+                  },
+                  "maxItems": 3
+                }
+              }
+            },
+            "400": {
+              "description": "Número de teléfono no proporcionado o inválido",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  },
+                  "examples": {
+                    "missingPhone": {
+                      "summary": "Teléfono no proporcionado",
+                      "value": {
+                        "error": "Phone number is required"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "No autenticado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/webhooks/wee-trust": {
+        "post": {
+          "tags": [
+            "Webhooks"
+          ],
+          "summary": "Webhook de Wee Trust",
+          "description": "Endpoint para recibir notificaciones de Wee Trust cuando un documento de autorización ha sido firmado. Este endpoint es llamado automáticamente por Wee Trust.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string",
+                      "enum": [
+                        "sentDocument",
+                        "signedDocument",
+                        "completedDocument"
+                      ]
+                    },
+                    "documentID": {
+                      "type": "string",
+                      "description": "ID del documento en Wee Trust",
+                      "example": "65d7d2a3867234003591c367"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "DRAFT",
+                        "PENDING",
+                        "COMPLETED",
+                        "REJECTED"
+                      ]
+                    },
+                    "signatory": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "emailID": {
+                            "type": "string",
+                            "format": "email"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "isSigned": {
+                            "type": "integer",
+                            "description": "0 = no firmado, 1 = firmado"
+                          },
+                          "signatoryID": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "documentFileObj": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string",
+                          "description": "URL del documento firmado"
+                        },
+                        "size": {
+                          "type": "string",
+                          "description": "Tamaño del archivo"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "event",
+                    "documentID"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook procesado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "screeningId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Health check del webhook",
+        "description": "Endpoint de verificación para confirmar que el webhook está activo",
+        "responses": {
+          "200": {
+            "description": "Webhook activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Wee Trust webhook endpoint is active"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/upload": {
+      "post": {
+        "tags": [
+          "Archivos"
+        ],
+        "summary": "Subir archivo",
+        "description": "Sube un archivo (imagen o PDF) con compresión automática para imágenes. El archivo se almacena en Cloudflare R2. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Archivo a subir (imagen: JPEG, PNG, GIF, WEBP o PDF). Las imágenes se comprimen automáticamente a JPEG con calidad 85%. Máximo 10MB."
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archivo subido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fileUrl": {
+                      "type": "string",
+                      "description": "URL del archivo subido (válido por 7 días)",
+                      "example": "https://6809b8cd12e8e1f392555597f0aa0ca7.r2.cloudflarestorage.com/..."
+                    },
+                    "fileKey": {
+                      "type": "string",
+                      "description": "Clave del archivo en el almacenamiento",
+                      "example": "form-uploads/1734567890123-documento.pdf"
+                    },
+                    "fileName": {
+                      "type": "string",
+                      "description": "Nombre del archivo original",
+                      "example": "documento.pdf"
+                    },
+                    "contentType": {
+                      "type": "string",
+                      "description": "Tipo MIME del archivo (image/jpeg para imágenes comprimidas)",
+                      "example": "image/jpeg"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Tamaño del archivo en bytes (después de compresión si aplica)",
+                      "example": 245678
+                    },
+                    "uploadedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Fecha de carga"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo inválido (tipo no permitido, tamaño excedido, o no se proporcionó archivo)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "noFile": {
+                    "summary": "No se proporcionó archivo",
+                    "value": {
+                      "error": "No file provided"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado - API key o sesión inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor o error de almacenamiento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/coupons": {
+      "post": {
+        "tags": [
+          "Cupones"
+        ],
+        "summary": "Crear cupón de descuento",
+        "description": "Crea un nuevo cupón de descuento que se sincroniza con Stripe. Solo administradores. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Código del cupón (se convertirá a mayúsculas)",
+                    "example": "ORG_ABC_20OFF",
+                    "minLength": 3,
+                    "maxLength": 50
+                  },
+                  "discountType": {
+                    "type": "string",
+                    "enum": [
+                      "percentage",
+                      "fixed_amount"
+                    ]
+                  },
+                  "discountValue": {
+                    "type": "number",
+                    "description": "Valor del descuento (porcentaje 0-100 o monto en MXN)",
+                    "example": 20
+                  },
+                  "appliesToServices": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "IDs de los servicios a los que aplica el cupón",
+                    "minItems": 1,
+                    "example": [
+                      1,
+                      3
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Descripción del cupón",
+                    "example": "Descuento para miembros de la organización ABC"
+                  },
+                  "organizationName": {
+                    "type": "string",
+                    "description": "Nombre de la organización asociada",
+                    "example": "ABC Corporation"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Notas internas del administrador"
+                  },
+                  "maxRedemptions": {
+                    "type": "integer",
+                    "description": "Número máximo de veces que se puede usar (null = ilimitado)",
+                    "example": 100
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Fecha de expiración del cupón"
+                  }
+                },
+                "required": [
+                  "code",
+                  "discountType",
+                  "discountValue",
+                  "appliesToServices"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cupón creado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coupon"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El código del cupón ya existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cupones"
+        ],
+        "summary": "Listar cupones",
+        "description": "Lista todos los cupones con filtros opcionales. Solo administradores. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "Filtrar por estado activo/inactivo",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "query",
+            "description": "Filtrar por servicio específico",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "createdByUserId",
+            "in": "query",
+            "description": "Filtrar por usuario creador",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de cupones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Coupon"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/coupons/{id}": {
+      "delete": {
+        "tags": [
+          "Cupones"
+        ],
+        "summary": "Eliminar cupón",
+        "description": "Elimina un cupón de la base de datos y de Stripe. Solo administradores. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del cupón (UUID)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cupón eliminado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Coupon deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No autorizado - Requiere rol de administrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cupón no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/coupons/validate": {
+      "post": {
+        "tags": [
+          "Cupones"
+        ],
+        "summary": "Validar cupón",
+        "description": "Valida si un cupón es válido para un servicio específico. Solo administradores. Requiere autenticación.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Código del cupón a validar",
+                    "example": "ORG_ABC_20OFF"
+                  },
+                  "serviceId": {
+                    "type": "integer",
+                    "description": "ID del servicio",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "code",
+                  "serviceId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cupón válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "couponId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "discountType": {
+                      "type": "string",
+                      "enum": [
+                        "percentage",
+                        "fixed_amount"
+                      ]
+                    },
+                    "discountValue": {
+                      "type": "number",
+                      "example": 20
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cupón inválido o no aplica al servicio",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "403": {
+              "description": "No autorizado - Requiere rol de administrador",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API Key",
+        "description": "API Key de autenticación en formato: preca_xxxx_xxxxxxxxxxxxxxxx"
+      },
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Cookie de sesión para usuarios autenticados vía web"
+      }
+    },
+    "schemas": {
+      "Service": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID único del servicio"
+          },
+          "code": {
+            "type": "string",
+            "description": "Código único del servicio (ej: PRECA_BASIC)",
+            "example": "PRECA_BASIC"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del servicio",
+            "example": "Precalificación Básica"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del servicio",
+            "example": "Verificación de identidad + Buró de Crédito básico"
+          },
+          "priceMxn": {
+            "type": "number",
+            "format": "double",
+            "description": "Precio en pesos mexicanos",
+            "example": 299
+          },
+          "formattedPrice": {
+            "type": "string",
+            "description": "Precio formateado para mostrar",
+            "example": "$299.00 MXN"
+          },
+          "targetPersonType": {
+            "type": "string",
+            "enum": [
+              "physical",
+              "moral"
+            ],
+            "description": "Tipo de persona objetivo"
+          },
+          "stripeProductId": {
+            "type": "string",
+            "nullable": true,
+            "description": "ID del producto en Stripe",
+            "example": "prod_ABC123"
+          },
+          "stripePriceId": {
+            "type": "string",
+            "nullable": true,
+            "description": "ID del precio en Stripe",
+            "example": "price_XYZ789"
+          },
+          "isLinkedToStripe": {
+            "type": "boolean",
+            "description": "Indica si el servicio está vinculado con Stripe"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Indica si el servicio está activo"
+          },
+          "formSchema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FormSchema"
+              }
+            ],
+            "nullable": true,
+            "description": "Esquema de formulario dinámico para la recopilación de datos"
+          },
+          "hasFormSchema": {
+            "type": "boolean",
+            "description": "Indica si el servicio tiene un formulario configurado"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de creación"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de última actualización"
+          },
+          "requiresApplicantDetails": {
+            "type": "boolean",
+            "description": "Indica si el servicio requiere detalles adicionales del solicitante (RFC, dirección, etc.) para la carta de autorización."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "priceMxn",
+          "targetPersonType",
+          "isActive",
+          "hasFormSchema"
+        ]
+      },
+      "ServiceMinimal": {
+        "type": "object",
+        "description": "Representación mínima de un servicio con solo los campos esenciales",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID único del servicio",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del servicio",
+            "example": "Precalificación Básica"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del servicio",
+            "example": "Verificación de identidad + Buró de Crédito básico"
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "description": "Precio en pesos mexicanos",
+            "example": 299.99
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price"
+        ]
+      },
+      "CreateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código único del servicio (mayúsculas, alfanumérico con guiones bajos)",
+            "example": "PRECA_BASIC",
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del servicio",
+            "example": "Precalificación Básica"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del servicio",
+            "example": "Verificación de identidad + Buró de Crédito básico"
+          },
+          "priceMxn": {
+            "type": "number",
+            "format": "double",
+            "description": "Precio en pesos mexicanos (máximo 2 decimales)",
+            "example": 299,
+            "minimum": 0.01
+          },
+          "targetPersonType": {
+            "type": "string",
+            "enum": [
+              "physical",
+              "moral"
+            ],
+            "description": "Tipo de persona objetivo (physical=persona física, moral=persona moral)"
+          },
+          "requiresApplicantDetails": {
+            "type": "boolean",
+            "description": "Indica si el servicio requiere detalles adicionales del solicitante. Default: false.",
+            "default": false
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "priceMxn",
+          "targetPersonType"
+        ]
+      },
+      "UpdateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nombre del servicio"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del servicio"
+          },
+          "priceMxn": {
+            "type": "number",
+            "format": "double",
+            "description": "Precio en pesos mexicanos",
+            "minimum": 0.01
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Estado activo/inactivo del servicio"
+          },
+          "requiresApplicantDetails": {
+            "type": "boolean",
+            "description": "Indica si el servicio requiere detalles adicionales del solicitante."
+          }
+        }
+      },
+      "Coupon": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID único del cupón"
+          },
+          "code": {
+            "type": "string",
+            "description": "Código del cupón",
+            "example": "ORG_ABC_20OFF"
+          },
+          "stripeCouponId": {
+            "type": "string",
+            "description": "ID del cupón en Stripe"
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "percentage",
+              "fixed_amount"
+            ],
+            "description": "Tipo de descuento"
+          },
+          "discountValue": {
+            "type": "number",
+            "description": "Valor del descuento",
+            "example": 20
+          },
+          "discountDisplay": {
+            "type": "string",
+            "description": "Formato de visualización del descuento",
+            "example": "20%"
+          },
+          "appliesToServices": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "IDs de los servicios a los que aplica"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del cupón"
+          },
+          "organizationName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nombre de la organización"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Notas internas"
+          },
+          "usageCount": {
+            "type": "integer",
+            "description": "Número de veces que se ha usado"
+          },
+          "maxRedemptions": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Máximo de usos permitidos"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Estado activo/inactivo"
+          },
+          "isValid": {
+            "type": "boolean",
+            "description": "Si el cupón es válido actualmente"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de expiración"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID del usuario que creó el cupón"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de creación"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de última actualización"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Mensaje de error"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID único de la API key"
+          },
+          "keyPrefix": {
+            "type": "string",
+            "description": "Prefijo de la clave (primeros 10 caracteres)",
+            "example": "preca_a1b2"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Permisos asignados a la clave",
+            "example": [
+              "services:read",
+              "screenings:write"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Indica si la clave está activa"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha del último uso"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de creación"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de expiración"
+          }
+        },
+        "required": [
+          "id",
+          "keyPrefix",
+          "scopes",
+          "isActive",
+          "createdAt"
+        ]
+      },
+      "ApiKeyWithRawKey": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiKey"
+          }
+        ],
+        "properties": {
+          "rawKey": {
+            "type": "string",
+            "description": "La clave completa (solo se muestra al crear)",
+            "example": "preca_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"
+          }
+        }
+      },
+      "CreateApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "services:read",
+                "services:write",
+                "screenings:read",
+                "screenings:write",
+                "users:read"
+              ]
+            },
+            "description": "Permisos para la API key",
+            "minItems": 1,
+            "example": [
+              "services:read",
+              "screenings:write"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de expiración opcional"
+          }
+        },
+        "required": [
+          "scopes"
+        ]
+      },
+      "Client": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID único del cliente"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email del cliente"
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nombre completo del cliente"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Indica si el cliente está activo"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de registro"
+          },
+          "totalScreenings": {
+            "type": "integer",
+            "description": "Total de screenings solicitados",
+            "example": 15
+          },
+          "pendingScreenings": {
+            "type": "integer",
+            "description": "Screenings pendientes",
+            "example": 3
+          },
+          "completedScreenings": {
+            "type": "integer",
+            "description": "Screenings completados",
+            "example": 12
+          },
+          "totalSpent": {
+            "type": "number",
+            "format": "double",
+            "description": "Total gastado en pesos mexicanos",
+            "example": 4485
+          },
+          "lastScreeningDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha del último screening"
+          },
+          "initials": {
+            "type": "string",
+            "description": "Iniciales del cliente",
+            "example": "JD"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Nombre para mostrar",
+            "example": "Juan Pérez"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "new"
+            ],
+            "description": "Estado del cliente"
+          },
+          "activityLevel": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "description": "Nivel de actividad basado en número de screenings"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "isActive",
+          "createdAt",
+          "totalScreenings",
+          "pendingScreenings",
+          "completedScreenings",
+          "totalSpent",
+          "initials",
+          "displayName",
+          "status",
+          "activityLevel"
+        ]
+      },
+      "Screening": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID único de la solicitud"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "ID del usuario que creó la solicitud (null si es anónima)"
+          },
+          "serviceId": {
+            "type": "integer",
+            "example": 1,
+            "description": "ID del servicio solicitado (número auto-incremental)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_payment",
+              "paid",
+              "processing_bureau",
+              "completed",
+              "rejected"
+            ],
+            "description": "Estado actual de la solicitud"
+          },
+          "applicantName": {
+            "type": "string",
+            "description": "Nombre del solicitante",
+            "example": "Juan Pérez García"
+          },
+          "applicantEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email del solicitante",
+            "example": "juan.perez@example.com"
+          },
+          "applicantPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Teléfono del solicitante",
+            "example": "+52 55 1234 5678"
+          },
+          "formData": {
+            "type": "object",
+            "description": "Datos dinámicos del formulario (JSON)"
+          },
+          "stripeSessionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "ID de sesión de Stripe"
+          },
+          "clientReferenceId": {
+            "type": "string",
+            "nullable": true,
+            "description": "ID de referencia para rastreo",
+            "example": "PRECA_1701234567_a1b2c3d4"
+          },
+          "paymentLinkUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL del enlace de pago de Stripe",
+            "example": "https://buy.stripe.com/test_xxx"
+          },
+          "paymentAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Monto pagado en MXN",
+            "example": 299
+          },
+          "paymentCompletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de pago completado"
+          },
+          "isIdentityVerified": {
+            "type": "boolean",
+            "description": "Indica si la identidad ha sido verificada"
+          },
+          "verificationCompletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de verificación completada"
+          },
+          "weeTrustDocumentId": {
+            "type": "string",
+            "nullable": true,
+            "description": "ID del documento de autorización en Wee Trust",
+            "example": "65d7d2a3867234003591c367"
+          },
+          "authorizationDocumentUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL del documento de autorización firmado (Carta de Autorización para Buró de Crédito)",
+            "example": "https://storage.weetrust.mx/documents/signed_abc123.pdf"
+          },
+          "authorizationSignedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha en que se firmó el documento de autorización"
+          },
+          "adminUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "ID del administrador asignado"
+          },
+          "adminNotes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Notas del administrador"
+          },
+          "reportUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL del reporte de Buró de Crédito",
+            "example": "https://storage.preca.mx/reports/abc123.pdf"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de creación"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha de última actualización"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fecha de completado"
+          }
+        },
+        "required": [
+          "id",
+          "serviceId",
+          "status",
+          "applicantName",
+          "applicantEmail",
+          "formData",
+          "isIdentityVerified",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateScreeningRequest": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "integer",
+            "example": 1,
+            "description": "ID del servicio a solicitar (1, 2, 3...)"
+          },
+          "applicantName": {
+            "type": "string",
+            "description": "Nombre completo del solicitante",
+            "example": "Juan Pérez García",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "applicantEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email del solicitante",
+            "example": "juan.perez@example.com"
+          },
+          "applicantPhone": {
+            "type": "string",
+            "description": "Teléfono del solicitante (opcional)",
+            "example": "+52 55 1234 5678",
+            "minLength": 10
+          },
+          "advisorId": {
+            "type": "string",
+            "description": "ID del asesor inmobiliario que refirió al cliente (opcional, recomendado). Si se proporciona, se valida que el asesor exista y esté activo.",
+            "example": "123"
+          },
+          "advisorName": {
+            "type": "string",
+            "description": "Nombre del asesor inmobiliario (opcional, solo si no se proporciona advisorId). Se utiliza para crear o encontrar un asesor automáticamente.",
+            "example": "María López",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "advisorPhone": {
+            "type": "string",
+            "description": "Teléfono del asesor inmobiliario (opcional, solo si no se proporciona advisorId). Se utiliza junto con advisorName para crear o encontrar un asesor automáticamente.",
+            "example": "+52 55 9876 5432",
+            "minLength": 10,
+            "maxLength": 20
+          },
+          "formData": {
+            "type": "object",
+            "description": "Datos adicionales del formulario (JSON)",
+            "example": {
+              "direccion": "Calle Principal 123",
+              "ciudad": "Ciudad de México",
+              "codigo_postal": "01000",
+              "rfc": "XAXX010101000"
+            }
+          },
+          "applicantPersonType": {
+            "type": "string",
+            "enum": [
+              "physical",
+              "moral"
+            ],
+            "description": "Tipo de persona del solicitante (requerido si el servicio lo exige)."
+          },
+          "applicantLegalRepresentative": {
+            "type": "string",
+            "description": "Nombre del representante legal (requerido para personas morales)."
+          },
+          "applicantRFC": {
+            "type": "string",
+            "description": "RFC del solicitante (requerido si el servicio lo exige).",
+            "example": "XAXX010101000"
+          },
+          "applicantStreet": {
+            "type": "string",
+            "description": "Calle y número del domicilio fiscal."
+          },
+          "applicantColony": {
+            "type": "string",
+            "description": "Colonia del domicilio fiscal."
+          },
+          "applicantMunicipality": {
+            "type": "string",
+            "description": "Municipio del domicilio fiscal."
+          },
+          "applicantState": {
+            "type": "string",
+            "description": "Estado del domicilio fiscal."
+          },
+          "applicantZipCode": {
+            "type": "string",
+            "description": "Código postal del domicilio fiscal."
+          }
+        },
+        "required": [
+          "serviceId",
+          "applicantName",
+          "applicantEmail"
+        ]
+      },
+      "UpdateScreeningStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "processing_bureau",
+              "completed",
+              "rejected"
+            ],
+            "description": "Nuevo estado (solo transiciones manuales permitidas)"
+          },
+          "adminNotes": {
+            "type": "string",
+            "description": "Notas del administrador"
+          },
+          "reportUrl": {
+            "type": "string",
+            "description": "URL del reporte (requerido para estado 'completed')",
+            "example": "https://storage.preca.mx/reports/abc123.pdf"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "FormSchema": {
+        "type": "object",
+        "description": "Esquema de formulario dinámico que define los campos a recopilar",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Versión del esquema para futuras migraciones",
+            "example": "1.0"
+          },
+          "fields": {
+            "type": "array",
+            "description": "Lista de campos del formulario",
+            "items": {
+              "$ref": "#/components/schemas/FormField"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "version",
+          "fields"
+        ]
+      },
+      "FormField": {
+        "type": "object",
+        "description": "Definición de un campo de formulario",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID único del campo",
+            "example": "field_001"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del campo (snake_case, sin espacios)",
+            "example": "nombre_completo"
+          },
+          "label": {
+            "type": "string",
+            "description": "Etiqueta visible para el usuario",
+            "example": "Nombre completo"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "textarea",
+              "email",
+              "tel",
+              "number",
+              "date",
+              "select",
+              "radio",
+              "checkbox",
+              "boolean",
+              "file"
+            ],
+            "description": "Tipo de campo"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Indica si el campo es obligatorio"
+          },
+          "placeholder": {
+            "type": "string",
+            "description": "Texto de placeholder (opcional)",
+            "example": "Juan Pérez García"
+          },
+          "helpText": {
+            "type": "string",
+            "description": "Texto de ayuda mostrado debajo del campo (opcional)",
+            "example": "Nombre completo como aparece en la identificación"
+          },
+          "defaultValue": {
+            "description": "Valor por defecto del campo (opcional)",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "array"
+              }
+            ]
+          },
+          "validation": {
+            "$ref": "#/components/schemas/FieldValidation"
+          },
+          "options": {
+            "type": "array",
+            "description": "Opciones para campos select/radio/checkbox (requerido para estos tipos)",
+            "items": {
+              "$ref": "#/components/schemas/FieldOption"
+            }
+          },
+          "dependsOn": {
+            "$ref": "#/components/schemas/FieldDependency"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Orden de visualización (1, 2, 3...)",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "label",
+          "type",
+          "required",
+          "order"
+        ]
+      },
+      "FieldValidation": {
+        "type": "object",
+        "description": "Reglas de validación para un campo",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Patrón regex para validación",
+            "example": "^[0-9]{10}$"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje de error personalizado",
+            "example": "Debe ser un teléfono de 10 dígitos"
+          },
+          "min": {
+            "type": "number",
+            "description": "Valor mínimo (para números) o longitud mínima"
+          },
+          "max": {
+            "type": "number",
+            "description": "Valor máximo (para números) o longitud máxima"
+          },
+          "minLength": {
+            "type": "integer",
+            "description": "Longitud mínima (para strings)"
+          },
+          "maxLength": {
+            "type": "integer",
+            "description": "Longitud máxima (para strings)"
+          },
+          "maxSize": {
+            "type": "integer",
+            "description": "Tamaño máximo de archivo en bytes (para tipo file)",
+            "example": 10485760
+          },
+          "allowedTypes": {
+            "type": "array",
+            "description": "Tipos MIME permitidos para archivos",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "image/jpeg",
+              "image/png",
+              "application/pdf"
+            ]
+          }
+        }
+      },
+      "FieldOption": {
+        "type": "object",
+        "description": "Opción para campos select/radio/checkbox",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Valor de la opción",
+            "example": "menos_6_meses"
+          },
+          "label": {
+            "type": "string",
+            "description": "Etiqueta visible de la opción",
+            "example": "Menos de 6 meses"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ]
+      },
+      "FieldDependency": {
+        "type": "object",
+        "description": "Dependencia condicional para mostrar/ocultar campos",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Nombre del campo del que depende",
+            "example": "tiene_deudas"
+          },
+          "value": {
+            "description": "Valor que activa la visibilidad",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "equals",
+              "notEquals",
+              "contains"
+            ],
+            "description": "Operador de comparación",
+            "default": "equals"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      },
+      "UpdateFormSchemaRequest": {
+        "type": "object",
+        "description": "Solicitud para actualizar el esquema de formulario de un servicio",
+        "properties": {
+          "formSchema": {
+            "$ref": "#/components/schemas/FormSchema"
+          }
+        },
+        "required": [
+          "formSchema"
+        ],
+        "example": {
+          "formSchema": {
+            "version": "1.0",
+            "fields": [
+              {
+                "id": "field_001",
+                "name": "nombre_completo",
+                "label": "Nombre completo",
+                "type": "text",
+                "required": true,
+                "placeholder": "Juan Pérez García",
+                "order": 1
+              },
+              {
+                "id": "field_002",
+                "name": "telefono",
+                "label": "Teléfono",
+                "type": "tel",
+                "required": true,
+                "validation": {
+                  "pattern": "^[0-9]{10}$",
+                  "message": "Debe ser un teléfono de 10 dígitos"
+                },
+                "order": 2
+              },
+              {
+                "id": "field_003",
+                "name": "ciudad_renta",
+                "label": "¿En qué ciudad quiere rentar?",
+                "type": "select",
+                "required": true,
+                "options": [
+                  {
+                    "value": "cdmx",
+                    "label": "Ciudad de México"
+                  },
+                  {
+                    "value": "gdl",
+                    "label": "Guadalajara"
+                  },
+                  {
+                    "value": "mty",
+                    "label": "Monterrey"
+                  }
+                ],
+                "order": 3
+              }
+            ]
+          }
+        }
+      },
+      "PublicService": {
+        "type": "object",
+        "description": "Datos mínimos de un servicio para la landing page pública",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID único del servicio",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del servicio",
+            "example": "Consulta de Buró de Crédito Básica"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Descripción del servicio",
+            "example": "Verificación de identidad + Buró de Crédito básico"
+          },
+          "priceMxn": {
+            "type": "number",
+            "format": "double",
+            "description": "Precio en pesos mexicanos",
+            "example": 299
+          },
+          "formattedPrice": {
+            "type": "string",
+            "description": "Precio formateado para mostrar",
+            "example": "$299.00 MXN"
+          },
+          "formSchema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FormSchema"
+              }
+            ],
+            "nullable": true,
+            "description": "Esquema de formulario dinámico para la recopilación de datos"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "priceMxn",
+          "formattedPrice",
+          "formSchema"
+        ]
+      },
+      "CreatePublicScreeningRequest": {
+        "type": "object",
+        "description": "Solicitud para crear un screening desde la landing page pública",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "description": "ID del servicio a solicitar (como string)",
+            "example": "1"
+          },
+          "applicantName": {
+            "type": "string",
+            "description": "Nombre completo del solicitante",
+            "example": "Juan Pérez García",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "applicantEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Email del solicitante",
+            "example": "juan.perez@example.com"
+          },
+          "applicantPhone": {
+            "type": "string",
+            "description": "Teléfono del solicitante (opcional)",
+            "example": "+52 55 1234 5678",
+            "minLength": 10
+          },
+          "advisorId": {
+            "type": "string",
+            "description": "ID del asesor inmobiliario que refirió al cliente (opcional, recomendado). Si se proporciona, se valida que el asesor exista y esté activo.",
+            "example": "123"
+          },
+          "advisorName": {
+            "type": "string",
+            "description": "Nombre del asesor inmobiliario (opcional, solo si no se proporciona advisorId). Se utiliza para crear o encontrar un asesor automáticamente.",
+            "example": "María López",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "advisorPhone": {
+            "type": "string",
+            "description": "Teléfono del asesor inmobiliario (opcional, solo si no se proporciona advisorId). Se utiliza junto con advisorName para crear o encontrar un asesor automáticamente.",
+            "example": "+52 55 9876 5432",
+            "minLength": 10,
+            "maxLength": 20
+          },
+          "formData": {
+            "type": "object",
+            "description": "Datos adicionales del formulario según el formSchema del servicio",
+            "example": {
+              "direccion": "Calle Principal 123",
+              "ciudad": "Ciudad de México",
+              "codigo_postal": "01000"
+            }
+          },
+          "applicantPersonType": {
+            "type": "string",
+            "enum": [
+              "physical",
+              "moral"
+            ],
+            "description": "Tipo de persona del solicitante (requerido si el servicio lo exige)."
+          },
+          "applicantLegalRepresentative": {
+            "type": "string",
+            "description": "Nombre del representante legal (requerido para personas morales)."
+          },
+          "applicantRFC": {
+            "type": "string",
+            "description": "RFC del solicitante (requerido si el servicio lo exige).",
+            "example": "XAXX010101000"
+          },
+          "applicantStreet": {
+            "type": "string",
+            "description": "Calle y número del domicilio fiscal."
+          },
+          "applicantColony": {
+            "type": "string",
+            "description": "Colonia del domicilio fiscal."
+          },
+          "applicantMunicipality": {
+            "type": "string",
+            "description": "Municipio del domicilio fiscal."
+          },
+          "applicantState": {
+            "type": "string",
+            "description": "Estado del domicilio fiscal."
+          },
+          "applicantZipCode": {
+            "type": "string",
+            "description": "Código postal del domicilio fiscal."
+          }
+        },
+        "required": [
+          "serviceId",
+          "applicantName",
+          "applicantEmail",
+          "formData"
+        ]
+      },
+      "PublicScreeningResponse": {
+        "type": "object",
+        "description": "Respuesta mínima al crear un screening desde la landing page",
+        "properties": {
+          "paymentLinkUrl": {
+            "type": "string",
+            "description": "URL del enlace de pago de Stripe para completar el pago",
+            "example": "https://buy.stripe.com/test_xxxxxxxxxxxxxx"
+          }
+        },
+        "required": [
+          "paymentLinkUrl"
+        ],
+        "example": {
+          "paymentLinkUrl": "https://buy.stripe.com/test_xxxxxxxxxxxxxx"
+        }
+      }
+    }
+  }
+}

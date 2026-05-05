@@ -1,0 +1,13 @@
+<div class="credit-score-container">
+  <div class="credit-score" style="color: {{scoreColor score}}">
+    {{score}}
+  </div>
+  <div class="credit-score-label">
+    {{scoreRating score}}
+  </div>
+  {{#if showRange}}
+  <div class="credit-score-range">
+    Rango: 300 - 850 puntos
+  </div>
+  {{/if}}
+</div>

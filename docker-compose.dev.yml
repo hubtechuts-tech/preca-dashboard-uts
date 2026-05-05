@@ -1,0 +1,89 @@
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: preca-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-preca_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-preca_dev_password}
+      POSTGRES_DB: ${DB_NAME:-preca_dev}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/dev/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - preca-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-preca_dev} -d ${DB_NAME:-preca_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin (Database Management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: preca-pgadmin-dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@preca.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_dev_data:/var/lib/pgadmin
+      - ./docker/dev/pgadmin-servers.json:/pgadmin4/servers.json
+    networks:
+      - preca-network
+    depends_on:
+      - postgres
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: preca-app-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER:-preca_dev}:${DB_PASSWORD:-preca_dev_password}@postgres:5432/${DB_NAME:-preca_dev}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      SESSION_SECRET: ${SESSION_SECRET:-dev_session_secret_change_in_production}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_xxx}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_xxx}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # Hot reload support
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./next.config.js:/app/next.config.js
+      - ./postcss.config.mjs:/app/postcss.config.mjs
+      - ./tsconfig.json:/app/tsconfig.json
+      # Prevent node_modules override
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - preca-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+
+networks:
+  preca-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:
+    name: preca-postgres-dev-data
+  pgadmin_dev_data:
+    name: preca-pgadmin-dev-data

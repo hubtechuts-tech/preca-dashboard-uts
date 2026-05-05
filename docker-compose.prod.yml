@@ -1,0 +1,112 @@
+# ===================================
+# Production Docker Compose for Coolify
+# ===================================
+#
+# IMPORTANT: This configuration is optimized for Coolify deployment.
+# Coolify handles the following automatically:
+# - PostgreSQL database (managed service)
+# - Nginx reverse proxy (automatic)
+# - SSL/TLS certificates (Let's Encrypt)
+# - Database backups (automated)
+# - Load balancing (if needed)
+# - Health checks (configured via Coolify UI)
+#
+# This file contains ONLY the application service.
+# For local production testing, use this with an external database.
+
+version: '3.8'
+
+services:
+  # Next.js Application (Production)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: preca-app
+    restart: unless-stopped
+    environment:
+      # Application
+      NODE_ENV: ${NODE_ENV}
+      NEXT_TELEMETRY_DISABLED: 1
+
+      # Database (Coolify provides managed PostgreSQL)
+      # Set DATABASE_URL via Coolify environment variables
+      DATABASE_URL: ${DATABASE_URL}
+
+      # URLs
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_SERVER_ACTIONS_ALLOWED_ORIGINS: ${NEXT_PUBLIC_SERVER_ACTIONS_ALLOWED_ORIGINS}
+
+      # Security
+      SESSION_SECRET: ${SESSION_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_MAX_AGE: ${SESSION_MAX_AGE:-86400}
+
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL}
+
+      # Email
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-resend}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+
+      # Wee Trust
+      WEETRUST_USER_ID: ${WEETRUST_USER_ID}
+      WEETRUST_API_KEY: ${WEETRUST_API_KEY}
+      WEETRUST_BASE_URL: ${WEETRUST_BASE_URL}
+
+      # Cloudflare R2 Storage
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET: ${R2_BUCKET:-preca-uploads}
+      R2_REGION: ${R2_REGION:-auto}
+
+      # CORS & Security
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      RATE_LIMIT_DURATION_MS: ${RATE_LIMIT_DURATION_MS:-60000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+
+      # Feature Flags
+      ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-true}
+      ENABLE_STRIPE_PAYMENTS: ${ENABLE_STRIPE_PAYMENTS:-true}
+
+      # Monitoring
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN}
+
+    # Ports are managed by Coolify's reverse proxy
+    # No need to expose ports to host
+    expose:
+      - "3000"
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust based on your server capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Connect to Coolify's network to access the database
+    networks:
+      - coolify
+
+# Connect to Coolify's default network (where database is)
+networks:
+  coolify:
+    external: true

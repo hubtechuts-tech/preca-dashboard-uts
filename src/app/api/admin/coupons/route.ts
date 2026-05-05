@@ -1,0 +1,120 @@
+/**
+ * Admin Coupons API Route
+ *
+ * POST /api/admin/coupons - Create a new coupon (Admin only)
+ * GET /api/admin/coupons - List all coupons (Admin only)
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { CouponController } from './_controllers/CouponController';
+import { CreateCouponUseCase } from '@/application/use-cases/coupon/CreateCouponUseCase';
+import { ListCouponsUseCase } from '@/application/use-cases/coupon/ListCouponsUseCase';
+import { ValidateCouponUseCase } from '@/application/use-cases/coupon/ValidateCouponUseCase';
+import { DeleteCouponUseCase } from '@/application/use-cases/coupon/DeleteCouponUseCase';
+import { PrismaCouponRepository } from '@/infrastructure/database/repositories/PrismaCouponRepository';
+import { StripeService } from '@/infrastructure/services/StripeService';
+import { prisma } from '@/infrastructure/database/PrismaClient';
+import { requirePermission, UnauthorizedError, ForbiddenError } from '@/lib/api-auth';
+import { Permission } from '@/domain/entities/Permission';
+
+/**
+ * Create controller with all dependencies
+ */
+function createController(): CouponController {
+  const couponRepository = new PrismaCouponRepository(prisma);
+  const stripeService = new StripeService(process.env.STRIPE_SECRET_KEY!);
+
+  const createUseCase = new CreateCouponUseCase(couponRepository, stripeService);
+  const listUseCase = new ListCouponsUseCase(couponRepository);
+  const validateUseCase = new ValidateCouponUseCase(couponRepository);
+  const deleteUseCase = new DeleteCouponUseCase(couponRepository, stripeService);
+
+  return new CouponController(
+    createUseCase,
+    listUseCase,
+    validateUseCase,
+    deleteUseCase
+  );
+}
+
+/**
+ * POST /api/admin/coupons
+ * Create a new coupon
+ * Requires admin authentication
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Require COUPONS_WRITE permission
+    const session = await requirePermission(request, Permission.COUPONS_WRITE);
+
+    // Parse request body
+    const body = await request.json();
+
+    const controller = createController();
+    const response = await controller.create(body, session.userId);
+
+    if (response.success) {
+      return NextResponse.json(response.data, { status: response.statusCode });
+    } else {
+      return NextResponse.json({ error: response.error }, { status: response.statusCode });
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    console.error('Unexpected error in POST /api/admin/coupons:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * GET /api/admin/coupons
+ * List all coupons with optional filters
+ * Requires admin authentication
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Require COUPONS_READ permission
+    await requirePermission(request, Permission.COUPONS_READ);
+
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const filters: any = {};
+
+    const isActive = searchParams.get('isActive');
+    if (isActive !== null) {
+      filters.isActive = isActive === 'true';
+    }
+
+    const serviceId = searchParams.get('serviceId');
+    if (serviceId) {
+      filters.serviceId = parseInt(serviceId, 10);
+    }
+
+    const createdByUserId = searchParams.get('createdByUserId');
+    if (createdByUserId) {
+      filters.createdByUserId = createdByUserId;
+    }
+
+    const controller = createController();
+    const response = await controller.list(filters);
+
+    if (response.success) {
+      return NextResponse.json(response.data, { status: response.statusCode });
+    } else {
+      return NextResponse.json({ error: response.error }, { status: response.statusCode });
+    }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    console.error('Unexpected error in GET /api/admin/coupons:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

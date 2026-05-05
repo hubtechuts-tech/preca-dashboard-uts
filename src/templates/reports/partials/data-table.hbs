@@ -1,0 +1,40 @@
+{{!--
+  Data Table Partial
+  Usage: {{> data-table data=myArray columns=myColumns}}
+
+  columns format: [{ key: 'fieldName', label: 'Header', type: 'text|currency|date|status', width: '100px' }]
+--}}
+<table>
+  <thead>
+    <tr>
+      {{#each columns}}
+      <th {{#if width}}style="width: {{width}}"{{/if}}>{{label}}</th>
+      {{/each}}
+    </tr>
+  </thead>
+  <tbody>
+    {{#each data}}
+    <tr>
+      {{#each ../columns}}
+      <td>
+        {{#ifEquals type 'currency'}}
+          {{currency (lookup .. key)}}
+        {{else}}
+          {{#ifEquals type 'date'}}
+            {{dateShort (lookup .. key)}}
+          {{else}}
+            {{#ifEquals type 'status'}}
+              <span class="status status-{{lookup .. key}}">
+                {{lookup .. key}}
+              </span>
+            {{else}}
+              {{lookup .. key}}
+            {{/ifEquals}}
+          {{/ifEquals}}
+        {{/ifEquals}}
+      </td>
+      {{/each}}
+    </tr>
+    {{/each}}
+  </tbody>
+</table>

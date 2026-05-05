@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>PRECA Básica - {{applicantName}}</title>
+  {{> styles}}
+</head>
+
+<body>
+  <!-- Report Title -->
+
+
+  <!-- Main Content Section -->
+  <div class="section">
+    <div class="content-block">
+      <p class="report-paragraph">
+        Le informamos que el solicitante <strong>"{{applicantName}}"</strong>
+        resultó con una probabilidad de pago del <strong>{{paymentProbability}}%</strong>.
+      </p>
+    </div>
+  </div>
+
+  <!-- Bureau Commitments Section -->
+  <div class="section">
+    <h2 class="section-title">Compromisos en Buró de Crédito</h2>
+    <div class="content-block highlighted">
+      <p class="report-paragraph">{{bureauCommitmentsText}}</p>
+    </div>
+  </div>
+
+  <!-- Legal Records Section -->
+  <div class="section">
+    <h2 class="section-title">Antecedentes Legales</h2>
+    <div class="content-block">
+      <p class="report-paragraph">
+        Dentro de los antecedentes de juicios, se encontró que con el nombre
+        <strong>"{{applicantName}}"</strong> se encuentran los siguientes:
+      </p>
+      <div class="legal-records-box">
+        <pre class="legal-records-text">{{legalRecordsList}}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attachments Section -->
+  <div class="section">
+    <h2 class="section-title">Documentos Anexos</h2>
+    <div class="content-block">
+      <p class="report-paragraph">
+        Se anexa el reporte de validación de identidad con reconocimiento facial,
+        reporte de buró de crédito y el correo electrónico.
+        (<strong>{{applicantEmail}}</strong>)
+      </p>
+    </div>
+  </div>
+
+  <!-- Confidentiality Disclaimer -->
+  <div class="section">
+    <div class="disclaimer-box">
+      <p class="disclaimer-text">
+        Se le hace de su conocimiento que los documentos adjuntados deben ser confidenciales
+        y por lo tanto NO deben ser divulgados a persona alguna o al público en general dado
+        que estaría violentando la privacidad de datos personales del solicitante, de acuerdo
+        a lo establecido en la ley general de protección de datos personales en posesión de
+        sujetos obligados, publicada en el Diario Oficial de la Federación el 26 de enero de 2017.
+      </p>
+    </div>
+  </div>
+
+  <!-- Validity Section -->
+  <div class="section">
+    <div class="validity-box">
+      <p class="validity-text">
+        <strong>Preca valida por 90 días</strong>, a partir de la fecha de elaboración.
+      </p>
+      <p class="contact-text">
+        Para solicitar autentificación de la Preca, llamar al número
+        <strong>961 550 8233</strong> o al <strong>961 550 8234</strong>.
+      </p>
+    </div>
+  </div>
+
+  <!-- Signature Section -->
+  {{> signature-block analystName=analystName showClientSignature=false}}
+</body>
+
+</html>

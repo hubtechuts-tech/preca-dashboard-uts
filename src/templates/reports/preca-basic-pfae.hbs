@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Buró de Crédito - {{applicantName}}</title>
+  {{> styles}}
+</head>
+<body>
+  <!-- Report Title -->
+  <div class="report-title-section">
+    <h1 class="report-main-title">Reporte de Buró de Crédito</h1>
+    <p class="report-subtitle">{{serviceName}}</p>
+  </div>
+
+  <!-- Applicant Information Section -->
+  <div class="section">
+    <h2 class="section-title">Información del Solicitante</h2>
+    <div class="data-grid">
+      <div class="data-item">
+        <div class="data-label">Nombre Completo</div>
+        <div class="data-value">{{applicantName}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">RFC</div>
+        <div class="data-value">{{default rfc 'No proporcionado'}}</div>
+      </div>
+      {{#if curp}}
+      <div class="data-item">
+        <div class="data-label">CURP</div>
+        <div class="data-value">{{curp}}</div>
+      </div>
+      {{/if}}
+      <div class="data-item">
+        <div class="data-label">Correo Electrónico</div>
+        <div class="data-value">{{applicantEmail}}</div>
+      </div>
+      {{#if applicantPhone}}
+      <div class="data-item">
+        <div class="data-label">Teléfono</div>
+        <div class="data-value">{{applicantPhone}}</div>
+      </div>
+      {{/if}}
+      {{#if address}}
+      <div class="data-item full-width">
+        <div class="data-label">Domicilio</div>
+        <div class="data-value">{{address}}</div>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  <!-- Credit Score Section -->
+  <div class="section">
+    <h2 class="section-title">Puntuación de Crédito</h2>
+    {{> credit-score score=creditScore showRange=true}}
+
+    <div class="summary-box {{#ifLess creditScore 550}}danger{{else}}{{#ifLess creditScore 700}}warning{{/ifLess}}{{/ifLess}}">
+      <div class="summary-title">Interpretación del Score</div>
+      <div class="summary-text">
+        {{#ifGreater creditScore 749}}
+        El solicitante presenta un historial crediticio excelente. Bajo riesgo de incumplimiento.
+        {{else}}
+          {{#ifGreater creditScore 699}}
+          El solicitante presenta un buen historial crediticio. Riesgo moderado-bajo.
+          {{else}}
+            {{#ifGreater creditScore 649}}
+            El solicitante presenta un historial crediticio aceptable. Riesgo moderado.
+            {{else}}
+              {{#ifGreater creditScore 549}}
+              El solicitante presenta un historial crediticio regular. Se recomienda análisis adicional.
+              {{else}}
+              El solicitante presenta un historial crediticio bajo. Alto riesgo de incumplimiento.
+              {{/ifGreater}}
+            {{/ifGreater}}
+          {{/ifGreater}}
+        {{/ifGreater}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Credit Accounts Section -->
+  {{#if creditAccounts}}
+  <div class="section">
+    <h2 class="section-title">Cuentas de Crédito</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Institución</th>
+          <th>Tipo de Crédito</th>
+          <th class="text-right">Límite</th>
+          <th class="text-right">Saldo Actual</th>
+          <th class="text-center">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each creditAccounts}}
+        <tr>
+          <td>{{institution}}</td>
+          <td>{{creditType}}</td>
+          <td class="text-right">{{currency limit}}</td>
+          <td class="text-right">{{currency balance}}</td>
+          <td class="text-center">
+            <span class="status status-{{status}}">
+              {{#ifEquals status 'good'}}Al corriente{{/ifEquals}}
+              {{#ifEquals status 'warning'}}Con atraso{{/ifEquals}}
+              {{#ifEquals status 'bad'}}Vencido{{/ifEquals}}
+            </span>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  <!-- Financial Summary Section -->
+  <div class="section">
+    <h2 class="section-title">Resumen Financiero</h2>
+    <div class="data-grid data-grid-4">
+      <div class="data-item">
+        <div class="data-label">Total de Cuentas</div>
+        <div class="data-value large">{{default totalAccounts 0}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Cuentas al Corriente</div>
+        <div class="data-value large text-green">{{default accountsCurrent 0}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Cuentas con Atraso</div>
+        <div class="data-value large text-yellow">{{default accountsDelinquent 0}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Cuentas Vencidas</div>
+        <div class="data-value large text-red">{{default accountsDefault 0}}</div>
+      </div>
+    </div>
+
+    <div class="data-grid mt-4">
+      <div class="data-item">
+        <div class="data-label">Deuda Total Estimada</div>
+        <div class="data-value large">{{currency totalDebt}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Límite de Crédito Total</div>
+        <div class="data-value large">{{currency totalCreditLimit}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Utilización de Crédito</div>
+        <div class="data-value large">{{percentage creditUtilization}}</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">Consultas (últimos 6 meses)</div>
+        <div class="data-value large">{{default inquiriesLast6Months 0}}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment History Section -->
+  {{#if paymentHistory}}
+  <div class="section">
+    <h2 class="section-title">Historial de Pagos (Últimos 12 Meses)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th class="text-center">Ene</th>
+          <th class="text-center">Feb</th>
+          <th class="text-center">Mar</th>
+          <th class="text-center">Abr</th>
+          <th class="text-center">May</th>
+          <th class="text-center">Jun</th>
+          <th class="text-center">Jul</th>
+          <th class="text-center">Ago</th>
+          <th class="text-center">Sep</th>
+          <th class="text-center">Oct</th>
+          <th class="text-center">Nov</th>
+          <th class="text-center">Dic</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each paymentHistory}}
+        <tr>
+          <td>{{accountName}}</td>
+          {{#each months}}
+          <td class="text-center">
+            {{#ifEquals this 'OK'}}
+            <span class="text-green font-bold">{{this}}</span>
+            {{else}}
+            <span class="text-red font-bold">{{this}}</span>
+            {{/ifEquals}}
+          </td>
+          {{/each}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <p class="text-xs text-muted mt-2">OK = Pago a tiempo | 30/60/90 = Días de atraso | ND = Sin datos</p>
+  </div>
+  {{/if}}
+
+  <!-- Analyst Notes -->
+  {{#if analystNotes}}
+  <div class="section">
+    <div class="notes-section">
+      <div class="notes-title">Observaciones del Analista</div>
+      <div class="notes-text">{{analystNotes}}</div>
+    </div>
+  </div>
+  {{/if}}
+
+  <!-- Recommendation Section -->
+  {{#if recommendation}}
+  <div class="section">
+    <h2 class="section-title">Recomendación</h2>
+    <div class="summary-box {{#ifEquals recommendationStatus 'approved'}}{{else}}{{#ifEquals recommendationStatus 'rejected'}}danger{{else}}warning{{/ifEquals}}{{/ifEquals}}">
+      <div class="summary-title">
+        {{#ifEquals recommendationStatus 'approved'}}APROBADO{{/ifEquals}}
+        {{#ifEquals recommendationStatus 'conditional'}}APROBADO CON CONDICIONES{{/ifEquals}}
+        {{#ifEquals recommendationStatus 'rejected'}}NO APROBADO{{/ifEquals}}
+      </div>
+      <div class="summary-text">{{recommendation}}</div>
+    </div>
+  </div>
+  {{/if}}
+
+  <!-- Signature Section -->
+  {{> signature-block analystName=analystName applicantName=applicantName showClientSignature=false}}
+</body>
+</html>

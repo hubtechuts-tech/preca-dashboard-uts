@@ -1,0 +1,177 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model api_keys {
+  id           String    @id(map: "PK_96109043cb705b5876b8d2090c8") @default(uuid()) @db.Uuid
+  user_id      String    @db.Uuid
+  key_prefix   String    @db.VarChar(10)
+  key_hash     String    @db.VarChar
+  scopes       String[]  @default([])
+  is_active    Boolean   @default(true)
+  last_used_at DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  expires_at   DateTime? @db.Timestamptz(6)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_05b95d85f4001e03b058072c723")
+}
+
+model migrations {
+  id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
+  timestamp BigInt
+  name      String @db.VarChar
+}
+
+model screenings {
+  id                                    String                 @id(map: "PK_27829a815d74240367d3e68078e") @default(uuid()) @db.Uuid
+  user_id                               String?                @db.Uuid
+  service_id                            Int
+  advisor_id                            Int?
+  status                                screenings_status_enum @default(pending_payment)
+  applicant_name                        String                                  @db.VarChar
+  applicant_email                       String                                  @db.VarChar
+  applicant_phone                       String?                                 @db.VarChar
+  applicant_person_type                 service_catalog_target_person_type_enum?
+  applicant_legal_representative        String?                                 @db.VarChar(200)
+  applicant_rfc                         String?                                 @db.VarChar(13)
+  applicant_street                      String?                                 @db.VarChar(500)
+  applicant_colony                      String?                                 @db.VarChar(200)
+  applicant_municipality                String?                                 @db.VarChar(200)
+  applicant_state                       String?                                 @db.VarChar(100)
+  applicant_zip_code                    String?                                 @db.VarChar(10)
+  form_data                             Json                                    @default("{}")
+  report_data                           Json?
+  stripe_session_id                     String?                @db.VarChar
+  client_reference_id                   String?                @db.VarChar
+  payment_link_url                      String?                @db.VarChar(500)
+  payment_amount                        Decimal?               @db.Decimal(10, 2)
+  payment_completed_at                  DateTime?              @db.Timestamptz(6)
+  is_identity_verified                  Boolean                @default(false)
+  verification_completed_at             DateTime?              @db.Timestamptz(6)
+  wee_trust_document_id                 String?                @db.VarChar
+  authorization_document_url            String?                @db.VarChar(500)
+  authorization_signed_at               DateTime?              @db.Timestamptz(6)
+  identity_verification_id              String?                @db.VarChar
+  identity_verification_url             String?                @db.VarChar(500)
+  identity_verified_at                  DateTime?              @db.Timestamptz(6)
+  identity_verification_data            Json?
+  admin_user_id                         String?                @db.Uuid
+  admin_notes                           String?
+  report_url                            String?                @db.VarChar(500)
+  report_urls                           String[]               @default([])
+  report_file_keys                      String[]               @default([])
+  authorization_document_file_key       String?                @db.VarChar(500)
+  identity_verification_file_key        String?                @db.VarChar(500)
+  additional_emails                     String[]               @default([])
+  manual_payment_marked_by              String?                @db.Uuid
+  manual_payment_marked_at              DateTime?              @db.Timestamptz(6)
+  manual_payment_reason                 String?
+  created_at                            DateTime               @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime               @default(now()) @db.Timestamp(6)
+  completed_at                          DateTime?              @db.Timestamptz(6)
+  users_screenings_user_idTousers       users?                 @relation("screenings_user_idTousers", fields: [user_id], references: [id], onUpdate: NoAction, map: "FK_205632b6e8201384307636d5485")
+  service_catalog                       service_catalog        @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_305632b6e8201384307636d5486")
+  users_screenings_admin_user_idTousers users?                 @relation("screenings_admin_user_idTousers", fields: [admin_user_id], references: [id], onUpdate: NoAction, map: "FK_405632b6e8201384307636d5487")
+  users_manual_payment                  users?                 @relation("screenings_manual_payment", fields: [manual_payment_marked_by], references: [id], onUpdate: NoAction, map: "FK_screenings_manual_payment")
+  advisors                              advisors?              @relation(fields: [advisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_screenings_advisor_id")
+}
+
+model service_catalog {
+  id                         Int                                     @id(map: "PK_6a3e667a8080d99485f8507c867") @default(autoincrement())
+  code                       String                                  @unique(map: "UQ_2297298305d23f3f38692736152") @db.VarChar
+  name                       String                                  @db.VarChar
+  description                String?
+  price_mxn                  Decimal                                 @db.Decimal(10, 2)
+  target_person_type         service_catalog_target_person_type_enum
+  stripe_product_id          String?                                 @db.VarChar
+  stripe_price_id            String?                                 @db.VarChar
+  is_active                  Boolean                                 @default(true)
+  form_schema                Json?
+  report_schema              Json?
+  requires_applicant_details Boolean                                 @default(false)
+  created_at                 DateTime                                @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime                                @default(now()) @db.Timestamp(6)
+  screenings                 screenings[]
+}
+
+model users {
+  id                                         String          @id(map: "PK_a3ffb1c0c8416b9fc6f907b7433") @default(uuid()) @db.Uuid
+  email                                      String          @unique(map: "UQ_97672ac88f789774dd47f7c8be3") @db.VarChar
+  password_hash                              String?         @db.VarChar
+  full_name                                  String?         @db.VarChar
+  phone_number                               String?         @db.VarChar(20)
+  role                                       users_role_enum @default(client)
+  permissions                                String[]        @default([])
+  is_active                                  Boolean         @default(true)
+  created_at                                 DateTime        @default(now()) @db.Timestamp(6)
+  updated_at                                 DateTime        @default(now()) @db.Timestamp(6)
+  api_keys                                   api_keys[]
+  screenings_screenings_user_idTousers       screenings[]    @relation("screenings_user_idTousers")
+  screenings_screenings_admin_user_idTousers screenings[]    @relation("screenings_admin_user_idTousers")
+  screenings_manual_payment                  screenings[]    @relation("screenings_manual_payment")
+  coupons                                    coupons[]
+}
+
+model coupons {
+  id                  String                      @id(map: "PK_coupons") @default(uuid()) @db.Uuid
+  code                String                      @unique(map: "UQ_coupons_code") @db.VarChar(50)
+  stripe_coupon_id    String                      @unique(map: "UQ_coupons_stripe_id") @db.VarChar
+  discount_type       coupons_discount_type_enum
+  discount_value      Decimal                     @db.Decimal(10, 2)
+  applies_to_services Int[]                       @default([])
+  description         String?
+  organization_name   String?                     @db.VarChar
+  notes               String?
+  usage_count         Int                         @default(0)
+  max_redemptions     Int?
+  is_active           Boolean                     @default(true)
+  expires_at          DateTime?                   @db.Timestamptz(6)
+  created_by_user_id  String                      @db.Uuid
+  created_at          DateTime                    @default(now()) @db.Timestamp(6)
+  updated_at          DateTime                    @default(now()) @db.Timestamp(6)
+  created_by          users                       @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_coupons_created_by")
+}
+
+model advisors {
+  id           Int          @id(map: "PK_advisors") @default(autoincrement())
+  name         String       @db.VarChar(200)
+  email        String       @unique(map: "UQ_advisors_email") @db.VarChar(255)
+  phone_number String       @db.VarChar(20)
+  is_active    Boolean      @default(true)
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  updated_at   DateTime     @default(now()) @db.Timestamp(6)
+  screenings   screenings[]
+
+  @@index([phone_number], map: "IDX_advisors_phone")
+  @@index([email], map: "IDX_advisors_email")
+}
+
+enum screenings_status_enum {
+  pending_payment
+  paid
+  processing_bureau
+  completed
+  rejected
+}
+
+enum service_catalog_target_person_type_enum {
+  physical
+  moral
+}
+
+enum users_role_enum {
+  admin
+  client
+  staff
+  system_bot
+}
+
+enum coupons_discount_type_enum {
+  percentage
+  fixed_amount
+}

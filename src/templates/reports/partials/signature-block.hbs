@@ -1,0 +1,15 @@
+<div class="signature-section">
+  <div class="signature-grid">
+    {{#if showClientSignature}}
+    <div class="signature-block">
+      <div class="signature-line">
+        <div class="signature-name">{{applicantName}}</div>
+        <div class="signature-title">Solicitante</div>
+      </div>
+    </div>
+    {{/if}}
+  </div>
+  <p class="text-muted text-xs mt-4 text-center">
+    Documento generado el {{dateFormat generatedAt}}
+  </p>
+</div>

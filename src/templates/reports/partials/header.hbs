@@ -1,0 +1,23 @@
+<header class="report-header">
+  <!-- Top color bars with logo -->
+  <div class="header-bars">
+    <div class="bar-green-short"></div>
+    <div class="bar-navy-long"></div>
+    <div class="header-logo-section">
+      <img src="data:image/png;base64,{{logoBase64}}" alt="Preca" class="header-logo" />
+    </div>
+    <div class="bar-green-end"></div>
+  </div>
+
+  <!-- Report info below bars -->
+  <div class="header-info">
+    <div class="header-info-item">
+      <span class="header-label">FECHA:</span>
+      <span class="header-value">{{dateFormat generatedAt}}</span>
+    </div>
+    <div class="header-info-item">
+      <span class="header-label">FOLIO:</span>
+      <span class="header-value">{{folio}}</span>
+    </div>
+  </div>
+</header>

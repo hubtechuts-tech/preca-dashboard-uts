@@ -1,0 +1,1526 @@
+{
+	"info": {
+		"_postman_id": "56e041a5-c362-49d5-8aa5-fb67f4a1a044",
+		"name": "API de weetrust",
+		"description": "Bienvenido a la documentación de la API de weetrust, diseñada específicamente para desarrolladores de empresas que buscan integrar la **firma electrónica** de manera eficiente y sin complicaciones en sus aplicaciones. Nuestro objetivo es proporcionarte todos los recursos necesarios para facilitar la integración de este proceso en tu flujo de trabajo.\n\nCon la API de weetrust, podrás cargar documentos para ser enviados a firma, agregar firmantes, usar verificaciones de identidad, todo ello utilizando una API Restful para una experiencia fluida. Además, podrás compartir documentos firmados y verificar su autenticidad de manera sencilla usando blockchain.\n\nLa documentación de weetrust está diseñada para guiarte a través de cada paso del proceso de integración, proporcionándote ejemplos claros y detallados para que puedas comenzar rápidamente a aprovechar todas las capacidades de la API de weetrust en tus aplicaciones.\n\n## Entornos\n\nPara mejorar su experiencia en el proceso de integración, contamos con dos entornos: uno de pruebas (**sandbox**), y otro de **producción**. Para hacer uso de ellos será necesario que previamente se registre para poder [obtener un access token](https://weetrust.readme.io/reference/authentication-overview).\n\nPaginas de registro:\n\n- Entorno de sandbox: [https://sandbox.weetrust.com.mx/home/register](https://sandbox.weetrust.com.mx/home/register)\n    \n- Entorno de producción: [https://app.weetrust.mx/home/register](https://app.weetrust.mx/home/register)\n    \n\nPaginas principales:\n\n- Entorno de sandbox: [https://sandbox.weetrust.com.mx/](https://sandbox.weetrust.com.mx/)\n    \n- Entorno de producción: [https://app.weetrust.mx/](https://app.weetrust.mx/)\n    \n\n## Entorno de Sandbox (API)\n\nNuestro ambiente de sandbox está pensado para que puedas realizar las pruebas de código necesarias previo a su integración con tu ambiente de producción. Es importante señalar que este ambiente está contemplado únicamente para que se realicen pruebas y no para documentos reales.\n\nPara realizar peticiones a este ambiente deberás usar la ruta:\n\n**`https://api-sandbox.weetrust.com.mx`**\n\n## Entorno de Producción (API)\n\nUna vez que finalices con el proceso de pruebas podrás proceder a realizar la integración con el ambiente de producción.\n\nPara realizar peticiones a este ambiente deberás usar la ruta:\n\n**`https://api.weetrust.mx/`**",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37238853"
+	},
+	"item": [
+		{
+			"name": "AUTENTICACION",
+			"item": [
+				{
+					"name": "Token de acceso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"token\", jsonData.responseData.accessToken);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{user-id}}",
+								"type": "text"
+							},
+							{
+								"key": "api-key",
+								"value": "{{api-key}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}access/token",
+							"host": [
+								"{{baseUrl}}access"
+							],
+							"path": [
+								"token"
+							]
+						},
+						"description": "StartFragmentEndpoint que permite obtener un access token válido. Los access token tienen una vigencia de 5 minutos; si uno vence, es necesario generar uno nuevo.EndFragment"
+					},
+					"response": []
+				}
+			],
+			"description": "Para acceder a nuestro servicio de API Restful, se necesita generar un **access token** .\n\nPara generarlo se ocupa de un ID de usuario _(user-id)_ y una clave de API _(api-key_). Estos elementos son cruciales para autorizar y autenticar la solicitud de acceso a nuestro servicio.\n\nEl **user-id** identifica de manera única la cuenta de usuario, mientras que el **api-key** es una clave secreta que actúa como una especie de contraseña para garantizar que solo los desarrolladores autorizados puedan consumir la API.\n\n> 📘 \n  \n> El **api-key** puede ser generado las veces que se necesite, por seguridad. \n  \n\nPara obtener el **user-id** y el **api-key** deberá tener una cuenta en weetrust en el ambiente deseado, ya sea [sandbox](https://sandbox.weetrust.com.mx/home/register) o [productivo](https://app.weetrust.mx/home/register), despues ir a la sección de Perfil que se encuentra dentro del menú configuración y obtenerlos.\n\n<img src=\"https://files.readme.io/d016226-CleanShot_2024-02-21_at_12_.02.16.png\" alt=\"Vista de perfil para credenciales de API\">\n\nVista de perfil para credenciales de API\n\nCuando se obtenga el **access-token** válido, se podrá realizar solicitudes a nuestra API, accediendo así a los recursos y funcionalidades que proporcionamos.\n\n> 🚧 \n  \n> Recuerda mantener tu **user-id** y **api-key** de manera segura y confidencial, ya que son fundamentales para garantizar la seguridad de tus interacciones con nuestra plataforma."
+		},
+		{
+			"name": "DOCUMENTO",
+			"item": [
+				{
+					"name": "Acciones del documento",
+					"item": [
+						{
+							"name": "Obtener documentos",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}documents?status=COMPLETED",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "COMPLETED"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener un documento",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}documents/{{documentID}}",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"{{documentID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Editar documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "documentID",
+											"value": "{{documentID}}",
+											"type": "text"
+										},
+										{
+											"key": "documentSignType",
+											"value": "",
+											"type": "text"
+										},
+										{
+											"key": "country",
+											"value": "Mexico",
+											"type": "text"
+										},
+										{
+											"key": "position",
+											"value": "",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents",
+									"host": [
+										"{{baseUrl}}documents"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Eliminar documento",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/?documentID={{documentID}}",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										""
+									],
+									"query": [
+										{
+											"key": "documentID",
+											"value": "{{documentID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Otras funcionalidades",
+					"item": [
+						{
+							"name": "Validar integridad de documento",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "document",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/validate",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"validate"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reenviar correo a firmantes de un documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": []
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/resend-email?documentID={{documentID}}",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"resend-email"
+									],
+									"query": [
+										{
+											"key": "documentID",
+											"value": "{{documentID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Compartir documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "documentID",
+											"value": "{{documentID}}",
+											"type": "text"
+										},
+										{
+											"key": "postedTo",
+											"value": "email@domain.com",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/share",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"share"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Regenerar enlaces de firma de un documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"documentID\": \"{{documentID}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/update-signatures",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"update-signatures"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Repetir solicitud de firma en documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"documentID\": \"618c2f82413ebb18cb71aa8e\",\n    \"biometricLogID\": \"618c3051413ebb18cb71aa96\",\n    \"action\": \"biometricRetry\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/retry-biometric",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"retry-biometric"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Actualizar URL de documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									},
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"name": "Content-Type",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"documentID\": \"602ec9ccaef6711edeeb8f44\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}documents/update-url",
+									"host": [
+										"{{baseUrl}}documents"
+									],
+									"path": [
+										"update-url"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Agregar documento",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"documentID\", jsonData.responseData.documentID);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "user-id",
+								"value": "{{user-id}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"name": "Content-Type",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "document",
+									"type": "file",
+									"src": "/Users/ricardoisaacosunacastillo/Documents/Documentos/Firma.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}documents",
+							"host": [
+								"{{baseUrl}}documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fijar la firma en base a coordenadas en un documento",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "user-id",
+								"value": "{{user-id}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"documentID\":\"66a2c1f680a4e70035717732\",\"staticSignPositions\":[{\"user\":{\"email\":\"malena@neoleasing.mx\"},\"coordinates\":{\"x\":\" 130\",\"y\":\" 131\"},\"page\":\" 11\",\"pageY\":\" 131\",\"pageYv2\":\" 131\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"malena@neoleasing.mx\"},\"coordinates\":{\"x\":\" 130\",\"y\":\" 180\"},\"page\":\" 16\",\"pageY\":\" 180\",\"pageYv2\":\" 180\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"mgme76@yahoo.com\"},\"coordinates\":{\"x\":\" 362\",\"y\":\" 131\"},\"page\":\" 11\",\"pageY\":\" 131\",\"pageYv2\":\" 131\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"mgme76@yahoo.com\"},\"coordinates\":{\"x\":\" 39\",\"y\":\" 599\"},\"page\":\" 13\",\"pageY\":\" 599\",\"pageYv2\":\" 599\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"mgme76@yahoo.com\"},\"coordinates\":{\"x\":\" 365\",\"y\":\" 180\"},\"page\":\" 16\",\"pageY\":\" 180\",\"pageYv2\":\" 180\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"jlmo1968@gmail.com\"},\"coordinates\":{\"x\":\" 337\",\"y\":\" 276\"},\"page\":\" 11\",\"pageY\":\" 276\",\"pageYv2\":\" 276\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}},{\"user\":{\"email\":\"jlmo1968@gmail.com\"},\"coordinates\":{\"x\":\" 50\",\"y\":\" 355\"},\"page\":\" 16\",\"pageY\":\" 355\",\"pageYv2\":\" 355\",\"color\":\"#FFD247\",\"imageSize\":{\"width\":80,\"height\":51},\"parentImageSize\":{\"width\":590,\"height\":792},\"viewport\":{\"width\":590,\"height\":792}}]}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}documents/fixed-signatory",
+							"host": [
+								"{{baseUrl}}documents"
+							],
+							"path": [
+								"fixed-signatory"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enviar documento a firma",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "user-id",
+								"value": "{{user-id}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"name": "Content-Type",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"documentID\": \"{{documentID}}\",\n    \"message\": \"Nuevo\",\n    \"title\": \"Documento Prueba Nuevo\",\n    \"hasOrder\": true,\n    \"disableMailing\": false,\n    \"signatory\": [{\n        \"emailID\": \"email@domain.com\",\n        \"name\": \"Juanito Perez\",\n        \"identification\": \"face\",\n        \"check\": true,\n        \"order\": 105\n    }, {\n        \"emailID\": \"email2@domain.com\",\n        \"name\": \"Juanito López\",\n        \"identification\": \"face\",\n        \"check\": false,\n        \"order\": 4\n    }, {\n        \"emailID\": \"email3@domain.com\",\n        \"name\": \"Juanito García\",\n        \"identification\": \"face\",\n        \"check\": false,\n        \"order\": 78\n    }]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}documents/signatory",
+							"host": [
+								"{{baseUrl}}documents"
+							],
+							"path": [
+								"signatory"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "## Flujo de trabajo\n\nweetrust permite un flujo de firma digital muy sencillo y fácil de integrar a cualquier tipo de operación de negocio.\n\n### Paso 1: Obtener el access token\n\nEl primer paso en el flujo de firma de un documento es obtener un [Token de Acceso](https://developer.weetrust.mx/reference/authentication-overview) con las credenciales.\n\n**Petición:**\n\nShell\n\n``` shell\ncurl --location --request POST 'https://api-sandbox.weetrust.com.mx/access/token' \\\n--header 'user-id: [USER_ID]' \\\n--header 'api-key: [API_KEY]'\n\n ```\n\n**Respuesta:**\n\nJSON\n\n``` json\n{\n    \"responseData\": {\n        \"accessToken\": \"[ACCESS_TOKEN]\"\n    },\n    \"message\": \"Token generated Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n> &lt;h2 &gt;&lt;p &gt;📘&lt;/p&gt;&lt;p &gt;El token solo es válido durante 5 min.&lt;/p&gt;&lt;/h2&gt; \n  \n\n### Paso 2: Subir un documento\n\nPara el segundo paso, se deberá de [Agregar el documento](https://developer.weetrust.mx/reference/add-document) que se desea firmar en formato _**PDF**_ o _**DOCX**_.\n\n> &lt;h2 &gt;&lt;p &gt;📘&lt;/p&gt;&lt;p &gt;Para esta petición se requiere enviar el token previamente obtenido.&lt;/p&gt;&lt;/h2&gt; \n  \n\n**Petición:**\n\nJSON\n\n``` shell\ncurl --location 'https://api-sandbox.weetrust.com.mx/documents' \\\n--header 'token: [ACCESS_TOKEN]' \\\n--header 'user-id: [USER_ID]' \\\n--form 'document=@\"sample.pdf\"'\n\n ```\n\n**Respuesta:**\n\nJSON\n\n``` json\n{\n    \"responseData\": {\n        \"documentID\": \"65d7d2a3867234003591c367\",\n        \"documentType\": \"OTHERS\",\n        \"status\": \"DRAFT\",\n        \"country\": \"Mexico\",\n        \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n        \"addedOn\": 1708642980323,\n        \"documentFileObj\": {\n            \"url\": \"[SIGNED_URL_DOCUMENT_UPLOADED]\",\n            \"size\": \"71.5 KB\"\n        },\n        \"signatory\": [],\n        \"sharedWith\": [],\n        \"pscCertificate\": \"\",\n        \"blockchainCertificate\": \"\"\n    },\n    \"message\": \"Saved Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n### Paso 3: Fijar firma del documento (opcional)\n\nComo tercer paso, de forma opcional, si se requiere posicionar la firma del usuario(s) en una coordenada especifica sobre el documento, por ejemplo en una linea al pie de pagina o en los laterales, se debe utilizar el endpoint de [fixed-signatory](https://developer.weetrust.mx/reference/fixed-signatory-of-document).\n\nPara obtener las coordenadas que se envian en el parametro de **staticSignPositions** usaremos la herramienta de [PDF Coordinates](https://developer.weetrust.mx/reference/herramientas)\n\n> &lt;h2 &gt;&lt;p &gt;📘&lt;/p&gt;&lt;p &gt;Si se omite este paso, el firmante podrá posicionar la firma en cualquier parte del documento.&lt;/p&gt;&lt;/h2&gt; \n  \n> &lt;h2 &gt;&lt;p &gt;📘&lt;/p&gt;&lt;p &gt;Si se requiere posicionar mas de una firma, se debe enviar un arreglo de objetos en el parametro staticSignPositions&lt;/p&gt;&lt;/h2&gt; \n  \n\n**Petición:**\n\nShell\n\n``` shell\ncurl --location --request PUT 'https://api-sandbox.weetrust.com.mx/documents/fixed-signatory' \\\n--header 'accept: application/json' \\\n--header 'content-type: application/json' \\\n--header 'token: [ACCESS_TOKEN]' \\\n--header 'user-id: [USER_ID]' \\\n--data-raw '{\n    \"documentID\": \"65d7d2a3867234003591c367\",\n    \"staticSignPositions\": [\n        {\n            \"user\": {\n                \"email\": \"email@example.com\"\n            },\n            \"coordinates\": {\n                \"x\": 324,\n                \"y\": 314\n            },\n            \"page\": 1,\n            \"pageY\": 314,\n            \"pageYv2\": 314,\n            \"color\": \"#FFD247\",\n            \"imageSize\": {\n                \"width\": 101,\n                \"height\": 51\n            },\n            \"parentImageSize\": {\n                \"width\": 612,\n                \"height\": 792\n            },\n            \"viewport\": {\n                \"width\": 612,\n                \"height\": 792\n            }\n        }\n    ]\n}'\n\n ```\n\n**Respuesta**:\n\nJSON\n\n``` json\n{\n    \"responseData\": {\n        \"documentID\": \"65d7d2a3867234003591c367\",\n        \"documentType\": \"OTHERS\",\n        \"status\": \"DRAFT\",\n        \"country\": \"Mexico\",\n        \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n        \"addedOn\": 1708959160376,\n        \"documentFileObj\": {\n            \"url\": \"[URL_DOCUMENT]\",\n            \"size\": \"71.5 KB\"\n        },\n        \"signatory\": [],\n        \"sharedWith\": [],\n        \"pscCertificate\": \"\",\n        \"blockchainCertificate\": \"\"\n    },\n    \"message\": \"Updated Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n### Paso 4: Enviar documento a firma\n\nUna vez configurado el documento, se deberá de enviar la solicitud a los firmantes que usted requiera en dicho documento. Puede ser ser uno o más, en este caso enviaremos un solo firmante.\n\n**Peticion**\n\nJSON\n\n``` json\n{\n    \"documentID\": \"65d7d2a3867234003591c367\",\n    \"message\": \"Se le solicita la firma del siguiente contrato\",\n    \"title\": \"Firma de contrato\",\n    \"signatory\": [\n        {\n            \"emailID\": \"jose.perez@example.com\",\n            \"name\": \"José Pérez\"\n        }\n    ]\n}\n\n ```\n\n**Respuesta**\n\nJSON\n\n``` json\n{\n    \"responseData\": {\n        \"documentID\": \"65d7d2a3867234003591c367\",\n        \"documentType\": \"OTHERS\",\n        \"status\": \"PENDING\",\n        \"country\": \"Mexico\",\n        \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n        \"addedOn\": 1708959097626,\n        \"documentFileObj\": {\n            \"url\": \"[DOCUMENT_FILE_URL]\",\n            \"size\": \"71.5 KB\"\n        },\n        \"signatory\": [\n            {\n                \"emailID\": \"jose.perez@example.com\",\n                \"name\": \"José Pérez\",\n                \"isSigned\": 0,\n                \"signatoryID\": \"65dca59c8f034d002a289ea2\",\n                \"signing\": {\n                    \"url\": \"https://test.weetrust.com.mx/signatory/65dc45788f034d002a289e9bx/65dca59c8f034d002a289ea8/1708959132938/8b0015\",\n                    \"expiry\": 1709823132958\n                },\n                \"imageURL\": \"\",\n                \"emailTracking\": []\n            }\n        ],\n        \"sharedWith\": [],\n        \"pscCertificate\": \"\",\n        \"blockchainCertificate\": \"\"\n    },\n    \"message\": \"Updated Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n### Paso 5: Configuración de webhooks (recomendado)\n\nSe remienda el uso de webhooks para recibir notificaciones de los eventos relacionados a la trazabilidad de la firma del documento.\n\nPara ello puede revisar la guia rapida de webooks en [Guia Rapida de Webhooks](https://developer.weetrust.mx/reference/overview-1)\n\n> &lt;h2 &gt;&lt;p &gt;🚧&lt;/p&gt;&lt;p &gt;No se recomienda el uso de long polling.&lt;/p&gt;&lt;/h2&gt;"
+		},
+		{
+			"name": "IDENTIDAD",
+			"item": [
+				{
+					"name": "Extracción de recibos de México",
+					"item": [
+						{
+							"name": "Verificar OCR",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = JSON.parse(responseBody);",
+											"postman.setEnvironmentVariable(\"uuid\", jsonData.responseData.uuid);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"fileImage\": \"{{cfeImage}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}ocr/verify",
+									"host": [
+										"{{baseUrl}}ocr"
+									],
+									"path": [
+										"verify"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener resultados de OCR",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"uuid\": \"{{uuid}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}ocr/get-results",
+									"host": [
+										"{{baseUrl}}ocr"
+									],
+									"path": [
+										"get-results"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Verificación",
+					"item": [
+						{
+							"name": "Verificar ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = JSON.parse(responseBody);",
+											"postman.setEnvironmentVariable(\"uuid\", jsonData.responseData.uuid);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"frontImage\": \"{{frontImage}}\",\n    \"backImage\": \"{{backImage}}\",\n    \"faceImage\": \"{{faceImage}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}biometric/verify-document",
+									"host": [
+										"{{baseUrl}}biometric"
+									],
+									"path": [
+										"verify-document"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener estado de la biometria",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"uuid\": \"{{uuid}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}biometric/get-status",
+									"host": [
+										"{{baseUrl}}biometric"
+									],
+									"path": [
+										"get-status"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener resultados de la verificación",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"uuid\": \"{{uuid}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}biometric/get-results",
+									"host": [
+										"{{baseUrl}}biometric"
+									],
+									"path": [
+										"get-results"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Validar CURP",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"curp\": \"{{curp}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}biometric/validate-curp",
+									"host": [
+										"{{baseUrl}}biometric"
+									],
+									"path": [
+										"validate-curp"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Validar INE/IFE",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ocr\": \"{{ocr}}\",\n    \"claveElector\": \"{{claveElector}}\",\n    \"numeroEmision\": \"{{numeroEmision}}\",\n    \"cic\": \"{{cic}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}biometric/validate-ine",
+									"host": [
+										"{{baseUrl}}biometric"
+									],
+									"path": [
+										"validate-ine"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Verificación de los rasgos biométricos faciales de una selfie vs la fotografía del documento de identidad de forma independiente al flujo normal de documentos."
+		},
+		{
+			"name": "WEBHOOKS",
+			"item": [
+				{
+					"name": "Documentos",
+					"item": [
+						{
+							"name": "Agregar webhook de documento",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"options\": []\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks?url=https://webhook.site/84879336-a343-4edb-bcf6-ca5c85be0f75&type=completedDocument",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"query": [
+										{
+											"key": "url",
+											"value": "https://webhook.site/84879336-a343-4edb-bcf6-ca5c85be0f75"
+										},
+										{
+											"key": "type",
+											"value": "completedDocument"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener webhook en documento",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks",
+									"host": [
+										"{{baseUrl}}webhooks"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Actualizar webhook de documento",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"options\": []\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks?url=https://webhook.site/b8c5d380-5ba5-487b-876d-08ccbdf6abe4&type=failedBiometric&webHookID=e80a8661129c19a642f5623306af76df9c181bfb",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"query": [
+										{
+											"key": "url",
+											"value": "https://webhook.site/b8c5d380-5ba5-487b-876d-08ccbdf6abe4"
+										},
+										{
+											"key": "type",
+											"value": "failedBiometric"
+										},
+										{
+											"key": "webHookID",
+											"value": "e80a8661129c19a642f5623306af76df9c181bfb"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Eliminar webhook de documento",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"options\": [{\n\t\t\"key\": \"llave\",\n\t\t\"value\": \"valor\"\n\t}, {\n\t\t\"key\": \"token\",\n\t\t\"value\": \"12345\"\n\t}, {\n\t\t\"key\": \"valor2\",\n\t\t\"value\": \"llave2\"\n\t}]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks?webHookID=4ea00c429fe7c937682ddb15e0e29f836541103d",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"query": [
+										{
+											"key": "webHookID",
+											"value": "4ea00c429fe7c937682ddb15e0e29f836541103d"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Verificaciones",
+					"item": [
+						{
+							"name": "Agregar webhook de verificación",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Webhooksite Identity\",\n    \"type\": \"IDENTITY_FINISHED\",\n    \"url\": \"https://webhook.site/b2346f1e-c5ce-49ef-bfc2-0f144b4f22ed\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks/verify",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"path": [
+										"verify"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener webhook de verificación",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks/verify",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"path": [
+										"verify"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Actualizar webhook de verificación",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"url\": \"https://webhook.site/f8570106-3f90-438e-bc79-f82c3ddfbdf5\",\n    \"webHookID\": \"a62c96152cd7c546cf2455995858b44aa7e10569\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks/verify",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"path": [
+										"verify"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Eliminar webhook de verificación",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "user-id",
+										"value": "{{user-id}}",
+										"type": "text"
+									},
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}webhooks/verify?webHookID=",
+									"host": [
+										"{{baseUrl}}webhooks"
+									],
+									"path": [
+										"verify"
+									],
+									"query": [
+										{
+											"key": "webHookID",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Los webhooks permiten conocer el estado de diferentes eventos relacionados con los procesos de los documentos, los cuales no tienen un tiempo determinado para dar una respuesta. De esta manera, se pueden programar eventos que permitan conocer cuando estos procesos finalicen, a través de la configuración que el usuario provea.\n\n## Tipos de webhook de documentos\n\nA continuación, se enlista los eventos relacionados al documentos desde que se envía a firma hasta cuando se completa.\n\n| Nombre | Descripción |\n| --- | --- |\n| sendDocument | Se detona cuando el documento es enviado a firma desde plataforma, o mediante en el endpoint de [Enviar documento a firma](https://developer.weetrust.mx/reference/request-signature) |\n| completedDocument | El evento se detona cuando el documento es firmado por todos los participantes en el proceso de firma |\n| signDocument | El evento se detona cada vez que un participante firma el documento. Ejemplo: Si son 3 participantes se estaría enviado 3 eventos sobre el mismo documento. |\n| pendingBiometric | El evento se detona cada vez que se procesa una verificación de identidad y pasa por un proceso manual para verificación |\n| failedBiometric | El evento se detona cada vez que al procesar la verificación de identidad falla por alguna validación |\n\n## Flujo de trabajo con webhooks\n\n### Agregar un webhook\n\nAquí mostraremos como hacer el registro de un webhook usando los tipos de webhook de documentos, para los ejemplos usaremos [https://webhook.site/](https://webhook.site/) que permite poder escuchar eventos usando webhook's.\n\n**Petición**\n\nShell\n\n``` bash\ncurl --location --request POST 'https://api-sandbox.weetrust.com.mx/webhooks?url=https://webhook.site/2424c940-1a2b-49bc-b2c8-b07ca0196c8c&type=completedDocument' \\\n--header 'user-id: [USER_ID]' \\\n--header 'token: [ACCESS_TOKEN]'\n\n ```\n\n**Respuesta**\n\nJSON\n\n``` json\n{\n    \"responseData\": {\n        \"webHookID\": \"83d3731d2fc20204e1b9cefb411561cfdc5b57d3\",\n        \"type\": \"completedDocument\",\n        \"addedOn\": 1709050181018,\n        \"webHookUrl\": \"https://webhook.site/2424c940-1a2b-49bc-b2c8-b07ca0196c8c\",\n        \"options\": []\n    },\n    \"message\": \"WebHook Added Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n### Listar los webhook\n\nPuedes enlistar todos los webhook's que hallas registrado por tipo de evento, para ello puedes usar el siguiente endpoint\n\n**Petición**\n\nShell\n\n``` bash\ncurl --location 'https://api-sandbox.weetrust.com.mx/webhooks' \\\n--header 'user-id: [USER_ID]' \\\n--header 'token: [ACCESS_TOKEN]'\n\n ```\n\n**Respuesta**\n\nJSON\n\n``` json\n{\n    \"responseData\": [\n        {\n            \"webHookID\": \"83d3731d9fc24204e1b9c8fb011561cfdc5b57d3\",\n            \"type\": \"completedDocument\",\n            \"addedOn\": 1709050181018,\n            \"webHookUrl\": \"https://webhook.site/ca85fe6c-f53b-456-bf37-cdc85dce46eb\",\n            \"options\": []\n        }\n    ],\n    \"message\": \"Get Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n### Listar los webhook\n\nPara eliminar un webhook, solo será necesario conocer el **webHookID** que se puede conseguir al momento de crear o de listar el webhook.\n\n**Petición**\n\nShell\n\n``` bash\ncurl --location --request DELETE 'https://api-sandbox.weetrust.com.mx/webhooks?webHookID=83d3731d9fc20204e1b9cefb011561cfdc5b57d3' \\\n--header 'user-id: [USER_ID]' \\\n--header 'token: [ACCESS_TOKEN]' \\\n--header 'Content-Type: application/json'\n\n ```\n\n**Respuesta**\n\n``` json\n{\n    \"responseData\": {},\n    \"message\": \"Deleted Successfully\",\n    \"success\": true,\n    \"responseCode\": 200\n}\n\n ```\n\n## Respuesta a los eventos del webhook\n\n### Documento completado\n\n``` json\n{\n  \"type\": \"completedDocument\",\n  \"Document\": {\n    \"_id\": \"65df4ceed7c349002a067f03\",\n    \"documentFileObj\": {\n      \"url\": \"[DOCUMENT_URL]\",\n      \"key\": \"[FILENAME].pdf\",\n      \"pendingForBlockChain\": \"\",\n      \"originalKey\": \"[FILENAME].pdf\",\n      \"version\": \"\",\n      \"size\": \"71.5 KB\"\n    },\n    \"createdBy\": {\n      \"userID\": \"[USER_ID]\",\n      \"adminID\": \"\",\n      \"fullName\": \"Firma digital\",\n      \"emailID\": \"admin@email.com\",\n      \"isSigned\": \"false\"\n    },\n    \"savedDocument\": {},\n    \"computedFields\": {\n      \"signatoryCount\": 1,\n      \"pendingSignatoryCount\": 0,\n      \"biometricCount\": 0,\n      \"validBiometricCount\": 0,\n      \"pendingBiometricCount\": 0,\n      \"isAllSignatoryPending\": false,\n      \"signatoryCountLessOne\": 0,\n      \"isAllValidBiometric\": true,\n      \"search\": [\n      ]\n    },\n    \"documentID\": \"65df4ceed7c499002a067f03\",\n    \"documentHash\": \"6f1de3e2f844b5346c960295761d7cbdb51e9f75adb5fee48ef9bbe35f456c7880839f2ca5176d68ef28c9e0ecad52328d1f126137c69334927054e08163\",\n    \"nomHash\": \"\",\n    \"apiNomFileName\": \"\",\n    \"pdfNomFileName\": \"\",\n    \"title\": \"[FILENAME].pdf\",\n    \"signatoryMessage\": \"Por favor firma el documento\",\n    \"signatoryTitle\": \"Fija firma por api\",\n    \"documentType\": \"OTHERS\",\n    \"verificationType\": \"\",\n    \"status\": \"COMPLETED\",\n    \"country\": \"Mexico\",\n    \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n    \"isForceID\": false,\n    \"hasOrder\": false,\n    \"disableMailing\": false,\n    \"documentFiles\": [],\n    \"signatory\": [\n      {\n        \"signing\": {\n          \"url\": \"[SIGNATURE_URL]\",\n          \"expiry\": 1709997046234\n        },\n        \"forceBiometric\": {\n          \"forcedPhotoID\": false,\n          \"forcedID\": false,\n          \"forcedFaceID\": false,\n          \"forcedBackgroundCheck\": false,\n          \"forcedFaceLogin\": false,\n          \"forcedOcr\": false\n        },\n        \"signatoryID\": \"65d45cf6d7c299002a067f0a\",\n        \"name\": \"Firma digital\",\n        \"emailID\": \"admin@email.com\",\n        \"phone\": \"\",\n        \"verificationCode\": \"\",\n        \"password\": \"\",\n        \"order\": 0,\n        \"photo\": [],\n        \"isSigned\": 1,\n        \"signatureType\": \"\",\n        \"title\": \"Fija firma por api\",\n        \"message\": \"Por favor firma el documento\",\n        \"signature\": [],\n        \"signatureArray\": [\n          {\n            \"url\": null,\n            \"imageName\": \"[SIGN].png\",\n            \"svgCoordinates\": null\n          }\n        ],\n        \"fieldArray\": [\n          {\n            \"left\": 396,\n            \"top\": 475.99999999999994,\n            \"pageY\": 476,\n            \"pageYv2\": 475.99999999999994,\n            \"width\": 127.75735294117646,\n            \"height\": 68.13725490196079,\n            \"type\": \"SIGNATURE\",\n            \"fontSize\": 0,\n            \"page\": 1,\n            \"viewport\": {\n              \"width\": 695,\n              \"height\": 899\n            },\n            \"extraData\": {},\n            \"value\": \"[SIGN].png\"\n          }\n        ],\n        \"isInvalidSignature\": false,\n        \"invalidSignatureReason\": \"\",\n        \"biometricApprovedByUser\": false,\n        \"hasBiometricDocument\": false,\n        \"identitySessionId\": \"\",\n        \"biometric\": null,\n        \"_id\": \"65df4cf6d7c299002a067f0a\",\n        \"attachment\": [],\n        \"attachmentUrl\": null\n      },\n      {\n        \"userID\": \"[USER_ID]\",\n        \"adminID\": \"\",\n        \"fullName\": \"Firma digital\",\n        \"emailID\": \"admin@example.com\",\n        \"isSigned\": \"false\"\n      }\n    ],\n    \"processingStatus\": \"IMAGE_PROCESSING_COMPLETED\",\n    \"voBoStatus\": \"INITIAL\",\n    \"isVoBo\": false,\n    \"signatureArray\": [],\n    \"language\": \"es\",\n    \"addedOn\": 1709133039470,\n    \"modifiedOn\": 1709133066759,\n    \"isDeleted\": 0,\n    \"isInactive\": 0,\n    \"isCanceled\": false,\n    \"isActiveGeolocation\": false,\n    \"isBiometricIDEnabled\": false,\n    \"isBiometricFaceIDEnabled\": false,\n    \"isBiometricBackgroundCheckEnabled\": false,\n    \"version\": 2,\n    \"templateHistoryID\": \"\",\n    \"templateID\": \"\",\n    \"isTemplateV2\": false,\n    \"splitOriginDocumentId\": \"\",\n    \"splitChildDocumentId\": \"\",\n    \"splitPage\": \"\",\n    \"splitNumber\": null,\n    \"nickname\": \"\",\n    \"identityProvider\": \"[PROVIDER]\",\n    \"isSignatureText\": false,\n    \"source\": \"DOCUMENT\",\n    \"formSignatory\": [],\n    \"formStatus\": \"\",\n    \"formAnswer\": null,\n    \"hasLegalPrivacyPolicy\": false,\n    \"isEndorsement\": false,\n    \"endorsementsCount\": 0,\n    \"endorsementId\": \"\",\n    \"isHiddenCreated\": false,\n    \"autocaptureSDKEnabled\": false,\n    \"isRatification\": false,\n    \"documentImage\": [],\n    \"logsStatus\": [\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Firma digital\",\n          \"emailID\": \"admin@email.com\"\n        },\n        \"operationType\": \"CREATED\",\n        \"sourceIP\": \"127.172.0.55\",\n        \"addedOn\": 1709133039470,\n        \"_id\": \"65df4cf6d7c299002a067f0b\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"email@email.com\"\n        },\n        \"operationType\": \"SENT_FOR_SIGNATURE\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709133046234,\n        \"_id\": \"65df4cf3d7c299002a067f0c\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"email@email.com\"\n        },\n        \"operationType\": \"SIGNED\",\n        \"sourceIP\": \"127.172.0.34\",\n        \"addedOn\": 1709133066759,\n        \"_id\": \"65df4d0ad74299002a067f12\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"\",\n          \"emailID\": \"\"\n        },\n        \"operationType\": \"STORED_IN_PSC_WORLD\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709133070090,\n        \"_id\": \"65df4d0ed7c299002a067f19\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"\",\n          \"emailID\": \"\"\n        },\n        \"operationType\": \"STORED_BLOCKCHAIN\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709133070090,\n        \"_id\": \"65df4d0ed7c299002a067f1a\"\n      }\n    ],\n    \"voBo\": [],\n    \"forwardings\": [],\n    \"__v\": 0,\n    \"computedAt\": \"2022-02-28T15:11:10.211Z\",\n    \"lastUpdatedAt\": 1709133066759,\n    \"documentURL\": \"[DOCUMENT_URL]\",\n    \"certificateURL\": \"[CERTIFICATE_URL]\",\n    \"pscCertificateURL\": \"[PSC_URL]\"\n  },\n  \"addedOn\": 1709133077879\n}\n\n ```\n\n### Firma de un documento\n\n``` json\n{\n  \"type\": \"signDocument\",\n  \"Document\": {\n    \"_id\": \"65df50c0d7c299002a067f28\",\n    \"documentFileObj\": {\n      \"url\": \"[DOCUMENT_URL]\",\n      \"key\": \"[FILENAME].pdf\",\n      \"pendingForBlockChain\": \"\",\n      \"originalKey\": \"[FILENAME].pdf\",\n      \"version\": \"\",\n      \"size\": \"71.5 KB\"\n    },\n    \"createdBy\": {\n      \"userID\": \"[USER_ID]\",\n      \"adminID\": \"\",\n      \"fullName\": \"Firma digital\",\n      \"emailID\": \"admin@example.com\",\n      \"isSigned\": \"false\"\n    },\n    \"savedDocument\": {},\n    \"computedFields\": {\n      \"signatoryCount\": 1,\n      \"pendingSignatoryCount\": 1,\n      \"biometricCount\": 0,\n      \"validBiometricCount\": 0,\n      \"pendingBiometricCount\": 0,\n      \"isAllSignatoryPending\": true,\n      \"signatoryCountLessOne\": -1,\n      \"isAllValidBiometric\": false,\n      \"search\": [\n      ]\n    },\n    \"documentID\": \"65df50cc299002a067f28\",\n    \"documentHash\": \"\",\n    \"nomHash\": \"\",\n    \"apiNomFileName\": \"\",\n    \"pdfNomFileName\": \"\",\n    \"title\": \"[FILENAME].pdf\",\n    \"signatoryMessage\": \"Por favor firma el documento\",\n    \"signatoryTitle\": \"Fija firma por api\",\n    \"documentType\": \"OTHERS\",\n    \"verificationType\": \"\",\n    \"status\": \"PENDING\",\n    \"country\": \"Mexico\",\n    \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n    \"isForceID\": false,\n    \"hasOrder\": false,\n    \"disableMailing\": false,\n    \"documentFiles\": [],\n    \"signatory\": [\n      {\n        \"signing\": {\n          \"url\": \"[SIGNATURE_URL]\",\n          \"expiry\": 1709998044386\n        },\n        \"forceBiometric\": {\n          \"forcedPhotoID\": false,\n          \"forcedID\": false,\n          \"forcedFaceID\": false,\n          \"forcedBackgroundCheck\": false,\n          \"forcedFaceLogin\": false,\n          \"forcedOcr\": false\n        },\n        \"signatoryID\": \"65dfdcd7c299002a067f2f\",\n        \"name\": \"Test\",\n        \"emailID\": \"example@example.com\",\n        \"phone\": \"\",\n        \"verificationCode\": \"\",\n        \"password\": \"\",\n        \"order\": 0,\n        \"photo\": [],\n        \"isSigned\": 1,\n        \"signatureType\": \"\",\n        \"title\": \"Fija firma por api\",\n        \"message\": \"Por favor firma el documento\",\n        \"signature\": [],\n        \"signatureArray\": [\n          {\n            \"url\": null,\n            \"imageName\": \"[SIGN_DRAW].png\",\n            \"svgCoordinates\": null\n          }\n        ],\n        \"fieldArray\": [\n          {\n            \"left\": 396,\n            \"top\": 475.99999999999994,\n            \"pageY\": 476,\n            \"pageYv2\": 475.99999999999994,\n            \"width\": 127.75735294117646,\n            \"height\": 68.13725490196079,\n            \"type\": \"SIGNATURE\",\n            \"fontSize\": 0,\n            \"page\": 1,\n            \"viewport\": {\n              \"width\": 695,\n              \"height\": 899\n            },\n            \"extraData\": {},\n            \"value\": \"[SIGN_DRAW].png\"\n          }\n        ],\n        \"isInvalidSignature\": false,\n        \"invalidSignatureReason\": \"\",\n        \"biometricApprovedByUser\": false,\n        \"hasBiometricDocument\": false,\n        \"identitySessionId\": \"\",\n        \"biometric\": null,\n        \"_id\": \"65df50dcd799002a067f2f\",\n        \"attachment\": [],\n        \"attachmentUrl\": null\n      }\n    ],\n    \"processingStatus\": \"IMAGE_PROCESSING_COMPLETED\",\n    \"voBoStatus\": \"INITIAL\",\n    \"isVoBo\": false,\n    \"signatureArray\": [],\n    \"language\": \"es\",\n    \"addedOn\": 1709134018198,\n    \"modifiedOn\": 1709134526413,\n    \"isDeleted\": 0,\n    \"isInactive\": 0,\n    \"isCanceled\": false,\n    \"isActiveGeolocation\": false,\n    \"isBiometricIDEnabled\": false,\n    \"isBiometricFaceIDEnabled\": false,\n    \"isBiometricBackgroundCheckEnabled\": false,\n    \"version\": 2,\n    \"templateHistoryID\": \"\",\n    \"templateID\": \"\",\n    \"isTemplateV2\": false,\n    \"splitOriginDocumentId\": \"\",\n    \"splitChildDocumentId\": \"\",\n    \"splitPage\": \"\",\n    \"splitNumber\": null,\n    \"nickname\": \"\",\n    \"identityProvider\": \"[PROVIDER]\",\n    \"isSignatureText\": false,\n    \"source\": \"DOCUMENT\",\n    \"formSignatory\": [],\n    \"formStatus\": \"\",\n    \"formAnswer\": null,\n    \"hasLegalPrivacyPolicy\": false,\n    \"isEndorsement\": false,\n    \"endorsementsCount\": 0,\n    \"endorsementId\": \"\",\n    \"isHiddenCreated\": false,\n    \"autocaptureSDKEnabled\": false,\n    \"isRatification\": false,\n    \"veridasSdkDocumentType\": \"\",\n    \"veridasSdkDefaultCountry\": \"\",\n    \"veridasSdkResidentPermit\": false,\n    \"documentImage\": [],\n    \"logsStatus\": [\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"firma digital\",\n          \"emailID\": \"admin@example.com\"\n        },\n        \"operationType\": \"CREATED\",\n        \"sourceIP\": \"[IP]\",\n        \"addedOn\": 1709134018198,\n        \"_id\": \"65df50dcd299002a067f30\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"example@example.com\"\n        },\n        \"operationType\": \"SENT_FOR_SIGNATURE\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709134044386,\n        \"_id\": \"65df50dcd7c299002a067f31\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"example@example.com\"\n        },\n        \"operationType\": \"SIGNED\",\n        \"sourceIP\": \"[IP]\",\n        \"addedOn\": 1709134526412,\n        \"_id\": \"65df52bed799002a067f3a\"\n      }\n    ],\n    \"voBo\": [],\n    \"forwardings\": [],\n    \"__v\": 0,\n    \"computedAt\": \"2022-02-28T15:27:24.580Z\",\n    \"lastUpdatedAt\": 1709134044386,\n    \"webhookData\": {\n      \"signatory\": {\n        \"signing\": {\n          \"url\": \"[SIGNATURE_URL]\",\n          \"expiry\": 1709998044386\n        },\n        \"forceBiometric\": {\n          \"forcedPhotoID\": false,\n          \"forcedID\": false,\n          \"forcedFaceID\": false,\n          \"forcedBackgroundCheck\": false,\n          \"forcedFaceLogin\": false,\n          \"forcedOcr\": false\n        },\n        \"signatoryID\": \"65df50dcd7c9002a067f2f\",\n        \"name\": \"Test\",\n        \"emailID\": \"example@example.com\",\n        \"phone\": \"\",\n        \"verificationCode\": \"\",\n        \"password\": \"\",\n        \"order\": 0,\n        \"photo\": [],\n        \"isSigned\": 1,\n        \"signatureType\": \"\",\n        \"title\": \"Fija firma por api\",\n        \"message\": \"Por favor firma el documento\",\n        \"signature\": [],\n        \"signatureArray\": [\n          {\n            \"url\": null,\n            \"imageName\": \"[SIGN_DRAW].png\",\n            \"svgCoordinates\": null\n          }\n        ],\n        \"fieldArray\": [\n          {\n            \"left\": 396,\n            \"top\": 475.99999999999994,\n            \"pageY\": 476,\n            \"pageYv2\": 475.99999999999994,\n            \"width\": 127.75735294117646,\n            \"height\": 68.13725490196079,\n            \"type\": \"SIGNATURE\",\n            \"fontSize\": 0,\n            \"page\": 1,\n            \"viewport\": {\n              \"width\": 695,\n              \"height\": 899\n            },\n            \"extraData\": {},\n            \"value\": \"[SIGN_DRAW].png\"\n          }\n        ],\n        \"isInvalidSignature\": false,\n        \"invalidSignatureReason\": \"\",\n        \"biometricApprovedByUser\": false,\n        \"hasBiometricDocument\": false,\n        \"identitySessionId\": \"\",\n        \"biometric\": null,\n        \"_id\": \"65df507c299002a067f2f\",\n        \"attachment\": [],\n        \"attachmentUrl\": null\n      }\n    }\n  },\n  \"addedOn\": 1709134526652\n}\n\n ```\n\n### Compartir documento\n\n``` json\n{\n  \"type\": \"sendDocument\",\n  \"Document\": {\n    \"_id\": \"65df50c0d7c299002a067f28\",\n    \"documentFileObj\": {\n      \"url\": \"[DOCUMENT_URL]\",\n      \"key\": \"[FILENAME].pdf\",\n      \"pendingForBlockChain\": \"\",\n      \"originalKey\": \"[FILENAME].pdf\",\n      \"version\": \"\",\n      \"size\": \"71.5 KB\"\n    },\n    \"createdBy\": {\n      \"userID\": \"[USER_ID]\",\n      \"adminID\": \"\",\n      \"fullName\": \"FIRMA DIGITAL\",\n      \"emailID\": \"admin@example.com\",\n      \"isSigned\": \"false\"\n    },\n    \"savedDocument\": {},\n    \"computedFields\": {\n      \"signatoryCount\": 1,\n      \"pendingSignatoryCount\": 0,\n      \"biometricCount\": 0,\n      \"validBiometricCount\": 0,\n      \"pendingBiometricCount\": 0,\n      \"isAllSignatoryPending\": false,\n      \"signatoryCountLessOne\": 0,\n      \"isAllValidBiometric\": true,\n      \"search\": [\n      ]\n    },\n    \"documentID\": \"65df50c0d7c002a067f28\",\n    \"documentHash\": \"cfef0036be2dd04ca2c19908b694df570a9fda529d0bcf9e0fdc017e398efa68665f58bd89e99dc380bb36d97a1d4095d56469d81f0404bf746ee386b\",\n    \"nomHash\": \"688fb0d6790e2355e5b7b99127146e044bfc5b544189b4af27e1b73fb3e90f85da861a1f31d46e6b5086251f237f0f578311112ac1a8fba74c47fc9807cfa445\",\n    \"apiNomFileName\": \"[FILENAME].asn\",\n    \"pdfNomFileName\": \"\",\n    \"title\": \"[FILENAME].pdf\",\n    \"signatoryMessage\": \"Por favor firma el documento\",\n    \"signatoryTitle\": \"Fija firma por api\",\n    \"documentType\": \"OTHERS\",\n    \"verificationType\": \"\",\n    \"status\": \"COMPLETED\",\n    \"country\": \"Mexico\",\n    \"documentSignType\": \"ELECTRONIC_SIGNATURE\",\n    \"isForceID\": false,\n    \"hasOrder\": false,\n    \"disableMailing\": false,\n    \"documentFiles\": [],\n    \"signatory\": [\n      {\n        \"signing\": {\n          \"url\": \"[SIGNATURE_URL]\",\n          \"expiry\": 1709998044386\n        },\n        \"forceBiometric\": {\n          \"forcedPhotoID\": false,\n          \"forcedID\": false,\n          \"forcedFaceID\": false,\n          \"forcedBackgroundCheck\": false,\n          \"forcedFaceLogin\": false,\n          \"forcedOcr\": false\n        },\n        \"signatoryID\": \"65df5cd7c299002a067f2f\",\n        \"name\": \"Test\",\n        \"emailID\": \"example@example.com\",\n        \"phone\": \"\",\n        \"verificationCode\": \"\",\n        \"password\": \"\",\n        \"order\": 0,\n        \"photo\": [],\n        \"isSigned\": 1,\n        \"signatureType\": \"\",\n        \"title\": \"Fija firma por api\",\n        \"message\": \"Por favor firma el documento\",\n        \"signature\": [],\n        \"signatureArray\": [\n          {\n            \"url\": null,\n            \"imageName\": \"[SIGN_DRAW].png\",\n            \"svgCoordinates\": null\n          }\n        ],\n        \"fieldArray\": [\n          {\n            \"left\": 396,\n            \"top\": 475.99999999999994,\n            \"pageY\": 476,\n            \"pageYv2\": 475.99999999999994,\n            \"width\": 127.75735294117646,\n            \"height\": 68.13725490196079,\n            \"type\": \"SIGNATURE\",\n            \"fontSize\": 0,\n            \"page\": 1,\n            \"viewport\": {\n              \"width\": 695,\n              \"height\": 899\n            },\n            \"extraData\": {},\n            \"value\": \"[SIGN_DRAW].png\"\n          }\n        ],\n        \"isInvalidSignature\": false,\n        \"invalidSignatureReason\": \"\",\n        \"biometricApprovedByUser\": false,\n        \"hasBiometricDocument\": false,\n        \"identitySessionId\": \"\",\n        \"biometric\": null,\n        \"_id\": \"65df50d7c299002a067f2f\",\n        \"attachment\": [],\n        \"attachmentUrl\": null\n      }\n    ],\n    \"processingStatus\": \"COMPLETED\",\n    \"voBoStatus\": \"INITIAL\",\n    \"isVoBo\": false,\n    \"signatureArray\": [],\n    \"language\": \"es\",\n    \"addedOn\": 1709134018198,\n    \"modifiedOn\": 1709134526413,\n    \"isDeleted\": 0,\n    \"isInactive\": 0,\n    \"isCanceled\": false,\n    \"isActiveGeolocation\": false,\n    \"isBiometricIDEnabled\": false,\n    \"isBiometricFaceIDEnabled\": false,\n    \"isBiometricBackgroundCheckEnabled\": false,\n    \"version\": 2,\n    \"templateHistoryID\": \"\",\n    \"templateID\": \"\",\n    \"isTemplateV2\": false,\n    \"splitOriginDocumentId\": \"\",\n    \"splitChildDocumentId\": \"\",\n    \"splitPage\": \"\",\n    \"splitNumber\": null,\n    \"nickname\": \"\",\n    \"identityProvider\": \"[PROVIDER]\",\n    \"isSignatureText\": false,\n    \"source\": \"DOCUMENT\",\n    \"formSignatory\": [],\n    \"formStatus\": \"\",\n    \"formAnswer\": null,\n    \"hasLegalPrivacyPolicy\": false,\n    \"isEndorsement\": false,\n    \"endorsementsCount\": 0,\n    \"endorsementId\": \"\",\n    \"isHiddenCreated\": false,\n    \"autocaptureSDKEnabled\": false,\n    \"isRatification\": false,\n    \"veridasSdkDocumentType\": \"\",\n    \"veridasSdkDefaultCountry\": \"\",\n    \"veridasSdkResidentPermit\": false,\n    \"documentImage\": [],\n    \"logsStatus\": [\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Firma digital\",\n          \"emailID\": \"admin@example.com\"\n        },\n        \"operationType\": \"CREATED\",\n        \"sourceIP\": \"[IP]\",\n        \"addedOn\": 1709134018198,\n        \"_id\": \"65df50dcd7c299002a067f30\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"example@example.com\"\n        },\n        \"operationType\": \"SENT_FOR_SIGNATURE\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709134044386,\n        \"_id\": \"65df50dcd7c299002a067f31\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"Test\",\n          \"emailID\": \"example@example.com\"\n        },\n        \"operationType\": \"SIGNED\",\n        \"sourceIP\": \"187.172.0.50:52429\",\n        \"addedOn\": 1709134526412,\n        \"_id\": \"65df52bed7c299002a067f3a\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"\",\n          \"emailID\": \"\"\n        },\n        \"operationType\": \"STORED_IN_PSC_WORLD\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709134529687,\n        \"_id\": \"65df52c1d7c299002a067f41\"\n      },\n      {\n        \"operationData\": {\n          \"documentID\": \"\",\n          \"signatoryID\": \"\",\n          \"biometricID\": \"\",\n          \"endorsementID\": \"\"\n        },\n        \"operationBy\": {\n          \"name\": \"\",\n          \"emailID\": \"\"\n        },\n        \"operationType\": \"STORED_BLOCKCHAIN\",\n        \"sourceIP\": \"\",\n        \"addedOn\": 1709134529687,\n        \"_id\": \"65df52c1d7c299002a067f42\"\n      }\n    ],\n    \"voBo\": [],\n    \"forwardings\": [],\n    \"__v\": 0,\n    \"computedAt\": \"2024-02-28T15:35:34.512Z\",\n    \"lastUpdatedAt\": 1709134526413,\n    \"webhookData\": {\n      \"signatory\": {\n        \"emailID\": \"example@example.com\"\n      },\n      \"pscUrl\": \"[PSC_URL]\",\n      \"documentURL\": \"[DOCUMENT_URL]\",\n      \"certificateURL\": \"[CERTIFICATE_URL]\"\n    }\n  },\n  \"addedOn\": 1709135576037\n}\n\n ```"
+		},
+		{
+			"name": "IDENTIDADV2",
+			"item": [
+				{
+					"name": "Obtener resultados de la verificación Copy",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{user-id}}"
+							},
+							{
+								"key": "token",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}identity/session/results/{{sessionId}}",
+							"host": [
+								"{{baseUrl}}identity"
+							],
+							"path": [
+								"session",
+								"results",
+								"{{sessionId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "SOLICITUD DE VERIFICACION DE IDENTIDAD",
+			"item": [
+				{
+					"name": "Crear peticion",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{user-id}}"
+							},
+							{
+								"key": "token",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"rnoris@weetrust.mx\",\r\n    \"type\": \"FACE\",\r\n    \"backgroundCheck\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}identity/validation/request",
+							"host": [
+								"{{baseUrl}}identity"
+							],
+							"path": [
+								"validation",
+								"request"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear peticion Copy",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "user-id",
+								"value": "{{user-id}}"
+							},
+							{
+								"key": "token",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"rnoris@weetrust.mx\",\r\n    \"type\": \"FACE\",\r\n    \"backgroundCheck\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}identity/validation/request",
+							"host": [
+								"{{baseUrl}}identity"
+							],
+							"path": [
+								"validation",
+								"request"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

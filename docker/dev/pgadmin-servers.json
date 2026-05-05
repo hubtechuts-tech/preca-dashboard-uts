@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Preca Development",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "preca_dev",
+      "Username": "preca_dev",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpassfile"
+    }
+  }
+}

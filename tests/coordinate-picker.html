@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Coordinate Picker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 350px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #viewer-container {
+            flex: 1;
+            overflow: auto;
+            background: #2d2d30;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #4ec9b0;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #569cd6;
+        }
+
+        .info-box {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 3px solid #4ec9b0;
+        }
+
+        .coordinate-display {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            padding: 10px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #3e3e42;
+        }
+
+        .coordinate-value {
+            color: #4fc1ff;
+            font-weight: bold;
+        }
+
+        .history-item {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #569cd6;
+        }
+
+        .history-coords {
+            font-family: 'Courier New', monospace;
+            color: #4fc1ff;
+        }
+
+        .copy-btn {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background: #1177bb;
+        }
+
+        .clear-btn {
+            background: #d16969;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .clear-btn:hover {
+            background: #e07979;
+        }
+
+        #pdf-canvas {
+            border: 2px solid #3e3e42;
+            cursor: crosshair;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .instruction {
+            background: #1e1e1e;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+            border-left: 3px solid #ce9178;
+        }
+
+        .label {
+            color: #9cdcfe;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .upload-btn:hover {
+            background: #1177bb;
+        }
+
+        .page-info {
+            font-size: 12px;
+            color: #858585;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>🎯 PDF Coordinate Picker</h1>
+
+        <div class="instruction">
+            <strong>Instructions:</strong><br>
+            1. Click "Load PDF" to select your PDF<br>
+            2. Click anywhere on the PDF<br>
+            3. Coordinates will appear here<br>
+            4. Copy coordinates to use in your code
+        </div>
+
+        <input type="file" id="file-input" accept=".pdf">
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+            📁 Load PDF
+        </button>
+
+        <div class="info-box">
+            <div class="label">Current Position</div>
+            <div class="coordinate-display">
+                X: <span class="coordinate-value" id="current-x">-</span><br>
+                Y: <span class="coordinate-value" id="current-y">-</span>
+            </div>
+            <div class="page-info" id="page-info">No PDF loaded</div>
+        </div>
+
+        <h2>📋 Click History</h2>
+        <button class="clear-btn" onclick="clearHistory()">Clear History</button>
+        <div id="history"></div>
+    </div>
+
+    <div id="viewer-container">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let scale = 1.5;
+        let clickHistory = [];
+
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Load PDF from file input
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+                    loadPDF(typedarray);
+                };
+                fileReader.readAsArrayBuffer(file);
+            }
+        });
+
+        // Load PDF from default location
+        async function loadDefaultPDF() {
+            try {
+                const url = '../public/documents/Formato_Autorizacion.pdf';
+                loadPDF(url);
+            } catch (e) {
+                console.log('No default PDF found, please upload one');
+            }
+        }
+
+        function loadPDF(source) {
+            pdfjsLib.getDocument(source).promise.then(function(pdf) {
+                pdfDoc = pdf;
+                renderPage(pageNum);
+                updatePageInfo();
+            });
+        }
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                page.render(renderContext).promise.then(function() {
+                    pageRendering = false;
+                    updatePageInfo();
+                });
+            });
+        }
+
+        function updatePageInfo() {
+            if (pdfDoc) {
+                const info = `Page ${pageNum} of ${pdfDoc.numPages} | Scale: ${scale.toFixed(1)}x`;
+                document.getElementById('page-info').textContent = info;
+            }
+        }
+
+        // Get PDF coordinates from canvas click
+        canvas.addEventListener('click', function(event) {
+            if (!pdfDoc) {
+                alert('Please load a PDF first');
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = event.clientX - rect.left;
+            const canvasY = event.clientY - rect.top;
+
+            // Convert to PDF coordinates (bottom-left origin)
+            const pdfX = Math.round(canvasX / scale);
+            const pdfY = Math.round((canvas.height - canvasY) / scale);
+
+            // Update display
+            document.getElementById('current-x').textContent = pdfX;
+            document.getElementById('current-y').textContent = pdfY;
+
+            // Add to history
+            addToHistory(pdfX, pdfY);
+        });
+
+        function addToHistory(x, y) {
+            const timestamp = new Date().toLocaleTimeString();
+            clickHistory.unshift({ x, y, timestamp });
+
+            // Keep only last 10
+            if (clickHistory.length > 10) {
+                clickHistory.pop();
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = clickHistory.map((item, index) => `
+                <div class="history-item">
+                    <div>
+                        <div class="history-coords">x: ${item.x}, y: ${item.y}</div>
+                        <div style="font-size: 11px; color: #858585;">${item.timestamp}</div>
+                    </div>
+                    <button class="copy-btn" onclick="copyCoords(${item.x}, ${item.y})">
+                        Copy
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function copyCoords(x, y) {
+            const text = `{ x: ${x}, y: ${y} }`;
+            navigator.clipboard.writeText(text).then(function() {
+                // Visual feedback
+                event.target.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    event.target.textContent = 'Copy';
+                }, 1000);
+            });
+        }
+
+        function clearHistory() {
+            clickHistory = [];
+            renderHistory();
+        }
+
+        // Try to load default PDF on start
+        loadDefaultPDF();
+    </script>
+</body>
+</html>

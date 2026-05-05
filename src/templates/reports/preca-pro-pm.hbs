@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>PRECA Pro - {{applicantName}}</title>
+  {{> styles}}
+  <style>
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 9px;
+    }
+
+    .ranking-table th,
+    .ranking-table td {
+      border: 1px solid #d1d5db;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .ranking-table th {
+      background: #1e3a4c;
+      color: white;
+      font-weight: 600;
+    }
+
+    .ranking-table tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    .ranking-table .highlight-row {
+      background: #dcfce7 !important;
+      font-weight: 600;
+    }
+
+    .aspect-section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+
+    .aspect-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e3a4c;
+      margin-bottom: 8px;
+      border-left: 3px solid #4CAF50;
+      padding-left: 10px;
+    }
+
+    .aspect-content {
+      padding-left: 13px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .evaluation-result {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 2px solid #4CAF50;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .evaluation-result.warning {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border-color: #f59e0b;
+    }
+
+    .evaluation-result.danger {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #ef4444;
+    }
+
+    .score-display {
+      font-size: 36px;
+      font-weight: 800;
+      color: #1e3a4c;
+      text-align: center;
+    }
+
+    .ranking-display {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Report Title -->
+
+
+  <!-- Introduction -->
+  <div class="section">
+    <div class="content-block">
+      <p class="report-paragraph">
+        En PRECA hemos desarrollado nuestro <strong>"Módulo de evaluación de prospecto a inquilinos"</strong>
+        único en el mercado inmobiliario del país. Con el mismo, evaluamos 7 características del prospecto
+        y damos como resultado una puntuación que nos dice el rankeo del interesado y las recomendaciones
+        de rentarle o no, así como, los requerimientos sugeridos a solicitar como requisitos.
+      </p>
+    </div>
+  </div>
+
+  <!-- Evaluation Result -->
+  <div class="section">
+    <h2 class="section-title">Resultado de Evaluación</h2>
+    <div class="evaluation-result {{#ifLess score 50}}danger{{else}}{{#ifLess score 70}}warning{{/ifLess}}{{/ifLess}}">
+      <div class="score-display">{{score}} puntos</div>
+      <div class="ranking-display">Rankeo: {{ranking}} - Riesgo {{riskLevel}}</div>
+      <p class="report-paragraph" style="text-align: center; margin-top: 15px;">
+        De acuerdo a la información proporcionada por el solicitante <strong>"{{applicantName}}"</strong>,
+        la cual le recomendamos sea verificada con documentos, resultó con una puntuación de:
+        <strong>{{score}}</strong> dando un rankeo de prospecto <strong>{{ranking}}</strong>
+        con un riesgo <strong>{{riskLevel}}</strong> y le recomendamos <strong>{{rentRecommendation}}</strong>.
+      </p>
+      <p class="report-paragraph" style="text-align: center;">
+        {{recommendationDetails}}
+      </p>
+    </div>
+  </div>
+
+  <!-- Ranking Reference Table -->
+  <div class="section">
+    <h2 class="section-title">Tabla de Referencia de Rankeo</h2>
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>RANKEO</th>
+          <th>RIESGO</th>
+          <th>OTORGAMIENTO</th>
+          <th>PUNTUACIÓN</th>
+          <th>ACCIÓN SUGERIDA</th>
+          <th>APLICA PÓLIZA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr {{#ifEquals ranking 'AAA' }}class="highlight-row" {{/ifEquals}}>
+          <td>AAA</td>
+          <td>MARGINAL</td>
+          <td>SI</td>
+          <td>90 O MÁS</td>
+          <td>FIRMA DE CONTRATO, PAGARÉS Y OBLIGADO SOLIDARIO</td>
+          <td>SI</td>
+        </tr>
+        <tr {{#ifEquals ranking 'A' }}class="highlight-row" {{/ifEquals}}>
+          <td>A</td>
+          <td>MÍNIMO</td>
+          <td>SI</td>
+          <td>80 - 89</td>
+          <td>FIRMA DE CONTRATO, PAGARÉS Y OBLIGADO SOLIDARIO</td>
+          <td>SI</td>
+        </tr>
+        <tr {{#ifEquals ranking 'B' }}class="highlight-row" {{/ifEquals}}>
+          <td>B</td>
+          <td>MODERADO</td>
+          <td>SI</td>
+          <td>70 - 79</td>
+          <td>FIRMA DE CONTRATO, PAGARÉS Y OBLIGADO SOLIDARIO SIN BURÓ</td>
+          <td>SI</td>
+        </tr>
+        <tr {{#ifEquals ranking 'C' }}class="highlight-row" {{/ifEquals}}>
+          <td>C</td>
+          <td>MEDIO</td>
+          <td>SI</td>
+          <td>60 - 69</td>
+          <td>FIRMA DE CONTRATO, PAGARÉS Y OBLIGADO SOLIDARIO CON PRECA</td>
+          <td>SI</td>
+        </tr>
+        <tr {{#ifEquals ranking 'D' }}class="highlight-row" {{/ifEquals}}>
+          <td>D</td>
+          <td>ALTO</td>
+          <td>A CRITERIO</td>
+          <td>50 - 59</td>
+          <td>FIRMA DE CONTRATO, PAGARÉS Y OBL. SOL. CON GARANTÍA PRENDARIA</td>
+          <td>A CRITERIO</td>
+        </tr>
+        <tr {{#ifEquals ranking 'E' }}class="highlight-row" {{/ifEquals}}>
+          <td>E</td>
+          <td>NO CALIFICA</td>
+          <td>NO</td>
+          <td>0 - 49</td>
+          <td>-</td>
+          <td>NO</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Aspects Analyzed -->
+  <div class="section">
+    <h2 class="section-title">Aspectos Analizados</h2>
+
+    <!-- 1. Bureau Credit -->
+    <div class="aspect-section">
+      <div class="aspect-title">1.- BURÓ DE CRÉDITO</div>
+      <div class="aspect-content">
+        <p>
+          Cuenta con <strong>{{activeCredits}}</strong> Créditos Activos.
+          Tiene <strong>{{settledCredits}}</strong> Créditos liquidados{{#if settledCreditsText}},
+          {{settledCreditsText}}{{/if}}.
+        </p>
+      </div>
+    </div>
+
+    <!-- 2. Portfolio Type -->
+    <div class="aspect-section">
+      <div class="aspect-title">2.- TIPO DE CARTERA</div>
+      <div class="aspect-content">
+        <p>
+          La Persona Moral cuenta con un tipo de cartera <strong>"{{portfolioType}}"</strong>.
+          Tiene <strong>{{onTimeAccounts}}</strong> cuentas abiertas el cual los ha pagado de manera
+          <strong>PUNTUAL</strong> y <strong>{{lateAccounts}}</strong> cuentas abiertas que ha pagado
+          de manera impuntual. (Se anexa buró de crédito)
+        </p>
+      </div>
+    </div>
+
+    <!-- 3. Legal Records -->
+    <div class="aspect-section">
+      <div class="aspect-title">3.- ANTECEDENTES LEGALES</div>
+      <div class="aspect-content">
+        <p>
+          Dentro de los antecedentes de juicios, se encontró que con el nombre
+          <strong>"{{applicantName}}"</strong> se encuentran los siguientes:
+        </p>
+        <div class="legal-records-box">
+          <pre class="legal-records-text">{{legalRecordsList}}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Residence Time -->
+    <div class="aspect-section">
+      <div class="aspect-title">4.- TIEMPO DE RESIDENCIA EN LA LOCALIDAD</div>
+      <div class="aspect-content">
+        <p>
+          La persona moral tiene <strong>{{residenceMonths}}</strong> meses de residencia
+          en la localidad (<strong>"{{localityName}}"</strong>).
+        </p>
+      </div>
+    </div>
+
+    <!-- 5. Rented Properties -->
+    <div class="aspect-section">
+      <div class="aspect-title">5.- NÚMERO DE INMUEBLES QUE RENTAN</div>
+      <div class="aspect-content">
+        <p>
+          La persona moral tiene <strong>{{rentedProperties}}</strong> inmuebles en arrendamiento,
+          le recomendamos pedir referencias a los propietarios de estos inmuebles.
+        </p>
+      </div>
+    </div>
+
+    <!-- 6. Company Size -->
+    <div class="aspect-section">
+      <div class="aspect-title">6.- TAMAÑO DE EMPRESA POR NÚMERO DE TRABAJADORES</div>
+      <div class="aspect-content">
+        <p>La persona moral cuenta con <strong>{{employeeCount}}</strong> trabajadores.</p>
+      </div>
+    </div>
+
+    <!-- 7. Company Age -->
+    <div class="aspect-section">
+      <div class="aspect-title">7.- EDAD DE LA EMPRESA</div>
+      <div class="aspect-content">
+        <p>El prospecto tiene <strong>{{companyAge}}</strong> años de edad.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attachments Section -->
+  <div class="section">
+    <h2 class="section-title">Documentos Anexos</h2>
+    <div class="content-block">
+      <p class="report-paragraph">
+        Se anexa el reporte de validación de identidad con reconocimiento facial,
+        reporte de buró de crédito y verificación del correo electrónico.
+        (<strong>{{applicantEmail}}</strong>)
+      </p>
+    </div>
+  </div>
+
+  <!-- Recommendations Section -->
+  {{#if recommendationsList}}
+  <div class="section">
+    <h2 class="section-title">Recomendaciones</h2>
+    <div class="content-block">
+      <p class="report-paragraph">Se hacen las siguientes recomendaciones:</p>
+      <pre class="report-preformatted">{{recommendationsList}}</pre>
+    </div>
+  </div>
+  {{/if}}
+
+  <!-- Confidentiality Disclaimer -->
+  <div class="section">
+    <div class="disclaimer-box">
+      <p class="disclaimer-text">
+        Se le hace de su conocimiento que los documentos adjuntados deben ser confidenciales
+        y por lo tanto NO deben ser divulgados a persona alguna o al público en general dado
+        que estaría violentando la privacidad de datos personales del solicitante, de acuerdo
+        a lo establecido en la ley general de protección de datos personales en posesión de
+        sujetos obligados, publicada en el Diario Oficial de la Federación el 26 de enero de 2017.
+      </p>
+    </div>
+  </div>
+
+  <!-- Validity Section -->
+  <div class="section">
+    <div class="validity-box">
+      <p class="validity-text">
+        <strong>Preca valida por 90 días</strong>, a partir de la fecha de elaboración.
+      </p>
+      <p class="contact-text">
+        Para solicitar autentificación de la Preca, llamar al número
+        <strong>961 550 8233</strong> o al <strong>961 550 8234</strong>.
+      </p>
+    </div>
+  </div>
+
+  <!-- Signature Section -->
+  {{> signature-block analystName=analystName showClientSignature=false}}
+</body>
+
+</html>
