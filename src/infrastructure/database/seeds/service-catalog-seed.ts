@@ -1,8 +1,8 @@
 /**
  * Service Catalog Seed Script
- *
+ * 
  * Seeds the database with default services (PRECA_BASIC, PRECA_PRO, PRECA_BUSINESS)
- * Optionally creates these services in Stripe as well
+ * Creates these services in Stripe and populates the required JSON form schemas.
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -16,7 +16,27 @@ interface ServiceSeedData {
   description: string;
   priceMxn: number;
   targetPersonType: 'physical' | 'moral';
+  formSchema: any;
 }
+
+// Esquemas JSON requeridos para que el frontend renderice los campos
+const basicFormSchema = {
+  fields: [
+    { name: "full_name", label: "Nombre Completo", type: "text", required: true, placeholder: "Juan Pérez" },
+    { name: "rfc", label: "RFC", type: "text", required: true, placeholder: "ABCD123456XYZ" },
+    { name: "email", label: "Correo Electrónico", type: "email", required: true, placeholder: "usuario@ejemplo.com" }
+  ]
+};
+
+const proFormSchema = {
+  fields: [
+    { name: "full_name", label: "Nombre Completo", type: "text", required: true },
+    { name: "rfc", label: "RFC", type: "text", required: true },
+    { name: "email", label: "Correo Electrónico", type: "email", required: true },
+    { name: "phone", label: "Teléfono de Contacto", type: "tel", required: true },
+    { name: "address", label: "Dirección Completa", type: "text", required: true }
+  ]
+};
 
 const services: ServiceSeedData[] = [
   {
@@ -25,6 +45,7 @@ const services: ServiceSeedData[] = [
     description: 'Verificación de identidad + Buró de Crédito básico para personas físicas',
     priceMxn: 299.00,
     targetPersonType: 'physical',
+    formSchema: basicFormSchema
   },
   {
     code: 'PRECA_PRO',
@@ -32,6 +53,7 @@ const services: ServiceSeedData[] = [
     description: 'Verificación de identidad + Buró de Crédito detallado + Referencias para personas físicas',
     priceMxn: 499.00,
     targetPersonType: 'physical',
+    formSchema: proFormSchema
   },
   {
     code: 'PRECA_BUSINESS',
@@ -39,6 +61,7 @@ const services: ServiceSeedData[] = [
     description: 'Verificación de identidad + Buró de Crédito empresarial para personas morales',
     priceMxn: 799.00,
     targetPersonType: 'moral',
+    formSchema: proFormSchema
   },
 ];
 
@@ -46,7 +69,6 @@ async function seedServices() {
   try {
     console.log('🌱 Starting service catalog seed...\n');
 
-    // Check if Stripe is configured
     const stripeEnabled = !!process.env.STRIPE_SECRET_KEY;
     let stripeService: StripeService | undefined;
 
@@ -62,15 +84,23 @@ async function seedServices() {
     for (const serviceData of services) {
       console.log(`Processing service: ${serviceData.code}...`);
 
-      // Check if service already exists
       const existingService = await prisma.service_catalog.findUnique({
         where: { code: serviceData.code }
       });
 
       if (existingService) {
-        console.log(`  → Service already exists (ID: ${existingService.id})`);
+        console.log(`  → Service already exists (ID: ${existingService.id}). Updating schema...`);
+        
+        // Actualizamos el esquema y nos aseguramos de que esté activo
+        await prisma.service_catalog.update({
+          where: { id: existingService.id },
+          data: {
+            form_schema: serviceData.formSchema,
+            is_active: true
+          }
+        });
 
-        // Check if it needs Stripe integration
+        // Lógica de Stripe para servicios existentes no vinculados
         if (stripeService && !existingService.stripe_product_id) {
           console.log('  → Linking to Stripe...');
           try {
@@ -84,7 +114,7 @@ async function seedServices() {
                   target_person_type: serviceData.targetPersonType
                 }
               },
-              Math.round(serviceData.priceMxn * 100), // Convert to cents
+              Math.round(serviceData.priceMxn * 100),
               'mxn'
             );
 
@@ -95,24 +125,19 @@ async function seedServices() {
                 stripe_price_id: price.id
               }
             });
-
-            console.log(`  → ✓ Linked to Stripe (Product: ${product.id}, Price: ${price.id})`);
+            console.log(`  → ✓ Linked to Stripe (Product: ${product.id})`);
           } catch (error) {
             console.error('  → ✗ Failed to link to Stripe:', error instanceof Error ? error.message : error);
           }
-        } else if (existingService.stripe_product_id) {
-          console.log(`  → Already linked to Stripe (Product: ${existingService.stripe_product_id})`);
         }
-
         console.log('');
         continue;
       }
 
-      // Create new service
+      // Crear nuevo servicio desde cero
       let stripeProductId: string | null = null;
       let stripePriceId: string | null = null;
 
-      // Create in Stripe first if enabled
       if (stripeService) {
         console.log('  → Creating in Stripe...');
         try {
@@ -126,19 +151,18 @@ async function seedServices() {
                 target_person_type: serviceData.targetPersonType
               }
             },
-            Math.round(serviceData.priceMxn * 100), // Convert to cents
+            Math.round(serviceData.priceMxn * 100),
             'mxn'
           );
 
           stripeProductId = product.id;
           stripePriceId = price.id;
-          console.log(`  → ✓ Created in Stripe (Product: ${product.id}, Price: ${price.id})`);
+          console.log(`  → ✓ Created in Stripe (Product: ${product.id})`);
         } catch (error) {
           console.error('  → ✗ Failed to create in Stripe:', error instanceof Error ? error.message : error);
         }
       }
 
-      // Create in database
       console.log('  → Creating in database...');
       const service = await prisma.service_catalog.create({
         data: {
@@ -149,12 +173,12 @@ async function seedServices() {
           target_person_type: serviceData.targetPersonType,
           stripe_product_id: stripeProductId,
           stripe_price_id: stripePriceId,
-          is_active: true
+          is_active: true,
+          form_schema: serviceData.formSchema
         }
       });
 
-      console.log(`  → ✓ Created in database (ID: ${service.id})`);
-      console.log('');
+      console.log(`  → ✓ Created in database (ID: ${service.id})\n`);
     }
 
     console.log('✅ Service catalog seeding completed successfully!');
@@ -166,7 +190,6 @@ async function seedServices() {
   }
 }
 
-// Run seed if executed directly
 if (require.main === module) {
   seedServices()
     .then(() => process.exit(0))
