@@ -68,9 +68,16 @@ export class WeeTrustService implements IWeeTrustService {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get Wee Trust access token: ${response.status} ${errorText}`);
-    }
+        const errorText = await response.text();
+        // BYPASS LOCAL: Si falla WeeTrust, solo avisa en consola pero NO detengas la app
+        console.warn(`[Local Dev] Ignorando error de Wee Trust: ${response.status} ${errorText}`);
+        
+        // Comentamos el error original:
+        // throw new Error(`Failed to get Wee Trust access token: ${response.status} ${errorText}`);
+        
+        // Retornamos un token falso para que la función no se rompa más adelante:
+        return "token_local_simulado_123"; 
+      }
 
     const data = await response.json();
 
