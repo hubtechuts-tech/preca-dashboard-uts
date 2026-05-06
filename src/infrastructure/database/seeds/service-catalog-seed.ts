@@ -21,6 +21,7 @@ interface ServiceSeedData {
 
 // Esquemas JSON requeridos para que el frontend renderice los campos
 const basicFormSchema = {
+  version: "1.0",
   fields: [
     { id: "full_name", name: "full_name", label: "Nombre Completo", type: "text", required: true, placeholder: "Juan Pérez" },
     { id: "rfc", name: "rfc", label: "RFC", type: "text", required: true, placeholder: "ABCD123456XYZ" },
@@ -29,6 +30,7 @@ const basicFormSchema = {
 };
 
 const proFormSchema = {
+  version: "1.0",
   fields: [
     { id: "full_name", name: "full_name", label: "Nombre Completo", type: "text", required: true },
     { id: "rfc", name: "rfc", label: "RFC", type: "text", required: true },
