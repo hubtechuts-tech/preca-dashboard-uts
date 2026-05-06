@@ -22,19 +22,19 @@ interface ServiceSeedData {
 // Esquemas JSON requeridos para que el frontend renderice los campos
 const basicFormSchema = {
   fields: [
-    { name: "full_name", label: "Nombre Completo", type: "text", required: true, placeholder: "Juan Pérez" },
-    { name: "rfc", label: "RFC", type: "text", required: true, placeholder: "ABCD123456XYZ" },
-    { name: "email", label: "Correo Electrónico", type: "email", required: true, placeholder: "usuario@ejemplo.com" }
+    { id: "full_name", name: "full_name", label: "Nombre Completo", type: "text", required: true, placeholder: "Juan Pérez" },
+    { id: "rfc", name: "rfc", label: "RFC", type: "text", required: true, placeholder: "ABCD123456XYZ" },
+    { id: "email", name: "email", label: "Correo Electrónico", type: "email", required: true, placeholder: "usuario@ejemplo.com" }
   ]
 };
 
 const proFormSchema = {
   fields: [
-    { name: "full_name", label: "Nombre Completo", type: "text", required: true },
-    { name: "rfc", label: "RFC", type: "text", required: true },
-    { name: "email", label: "Correo Electrónico", type: "email", required: true },
-    { name: "phone", label: "Teléfono de Contacto", type: "tel", required: true },
-    { name: "address", label: "Dirección Completa", type: "text", required: true }
+    { id: "full_name", name: "full_name", label: "Nombre Completo", type: "text", required: true },
+    { id: "rfc", name: "rfc", label: "RFC", type: "text", required: true },
+    { id: "email", name: "email", label: "Correo Electrónico", type: "email", required: true },
+    { id: "phone", name: "phone", label: "Teléfono de Contacto", type: "tel", required: true },
+    { id: "address", name: "address", label: "Dirección Completa", type: "text", required: true }
   ]
 };
 
@@ -88,51 +88,41 @@ async function seedServices() {
         where: { code: serviceData.code }
       });
 
-      if (existingService) {
-        console.log(`  → Service already exists (ID: ${existingService.id}). Updating schema...`);
-        
-        // Actualizamos el esquema y nos aseguramos de que esté activo
-        await prisma.service_catalog.update({
-          where: { id: existingService.id },
-          data: {
-            form_schema: serviceData.formSchema,
-            is_active: true
-          }
-        });
+    if (existingService) {
+      console.log(`  → Service already exists (ID: ${existingService.id}). Updating...`);
+      
+      let updateData: any = {
+        form_schema: serviceData.formSchema,
+        is_active: true
+      };
 
-        // Lógica de Stripe para servicios existentes no vinculados
-        if (stripeService && !existingService.stripe_product_id) {
-          console.log('  → Linking to Stripe...');
-          try {
-            const { product, price } = await stripeService.createProductWithPrice(
-              {
-                name: serviceData.name,
-                description: serviceData.description,
-                active: true,
-                metadata: {
-                  service_code: serviceData.code,
-                  target_person_type: serviceData.targetPersonType
-                }
-              },
-              Math.round(serviceData.priceMxn * 100),
-              'mxn'
-            );
-
-            await prisma.service_catalog.update({
-              where: { id: existingService.id },
-              data: {
-                stripe_product_id: product.id,
-                stripe_price_id: price.id
-              }
-            });
-            console.log(`  → ✓ Linked to Stripe (Product: ${product.id})`);
-          } catch (error) {
-            console.error('  → ✗ Failed to link to Stripe:', error instanceof Error ? error.message : error);
-          }
+      // Si no tiene vinculación con Stripe O si quieres asegurar que el precio sea el correcto
+      if (stripeService) {
+        console.log('  → Refreshing Stripe link...');
+        try {
+          const { product, price } = await stripeService.createProductWithPrice(
+            {
+              name: serviceData.name,
+              description: serviceData.description,
+              active: true,
+              metadata: { service_code: serviceData.code }
+            },
+            Math.round(serviceData.priceMxn * 100),
+            'mxn'
+          );
+          updateData.stripe_product_id = product.id;
+          updateData.stripe_price_id = price.id;
+        } catch (e) {
+          console.error('  → ✗ Stripe Refresh failed');
         }
-        console.log('');
-        continue;
       }
+
+      await prisma.service_catalog.update({
+        where: { id: existingService.id },
+        data: updateData
+      });
+      continue;
+    }
 
       // Crear nuevo servicio desde cero
       let stripeProductId: string | null = null;

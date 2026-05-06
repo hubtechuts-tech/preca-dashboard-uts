@@ -1,4 +1,3 @@
-
 services:
   # PostgreSQL Database
   postgres:
@@ -14,7 +13,8 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
-      - ./docker/dev/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - /run/desktop/mnt/host/c/preca-dashboard-uts/docker/dev/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+
     networks:
       - preca-network
     healthcheck:
